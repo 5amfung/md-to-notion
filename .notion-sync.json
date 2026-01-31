@@ -1,0 +1,110 @@
+{
+  "destinationPageId": "2f9c6073b5798033ae84dba25ed3f741",
+  "files": {
+    "Joint Events (Union).md": {
+      "notionPageId": "2f9c6073-b579-8101-b1d4-f08c16804abe",
+      "contentHash": "1b37ba093936dc84e8bbf3af09fd997a2d515732f59b811c0bfe801dad2b8648",
+      "lastSynced": "2026-01-31T08:32:42.924Z"
+    },
+    "Probability.md": {
+      "notionPageId": "2f9c6073-b579-8126-ae2f-d409a769b52a",
+      "contentHash": "1b245994cfc005868247a0c0d16676a383a25b6e9b1461c5c54d7253cf5c02ef",
+      "lastSynced": "2026-01-31T08:32:43.447Z"
+    },
+    "Bernoulli Distribution.md": {
+      "notionPageId": "2f9c6073-b579-811a-8794-c13fde4291e5",
+      "contentHash": "fbfb3b320719ab6408c28257c6070a353a99dd332d09478cb9c22aa1c3cc3f53",
+      "lastSynced": "2026-01-31T08:32:43.670Z"
+    },
+    "Uniform Distribution.md": {
+      "notionPageId": "2f9c6073-b579-81c4-9e9b-fd88010902ae",
+      "contentHash": "8d69963db9b6f596328bfee68d140e98e2f4d948b0a71f96f5dca90edc472f2a",
+      "lastSynced": "2026-01-31T08:32:45.308Z"
+    },
+    "Conditional Probability.md": {
+      "notionPageId": "2f9c6073-b579-8135-b5b2-f86c351f4bb3",
+      "contentHash": "32accdf6613801ea0aa7d552fcf53e67483bf25af2af3304a86ec2333b4800d2",
+      "lastSynced": "2026-01-31T08:32:46.592Z"
+    },
+    "Cumulative Distribution Function (CDF).md": {
+      "notionPageId": "2f9c6073-b579-81a5-9543-f00b113a0243",
+      "contentHash": "5c25515e25f2e06b0f42700c6c1f2216e5cea642367fd864522b91baa1932798",
+      "lastSynced": "2026-01-31T08:32:51.836Z"
+    },
+    "Bayes Theorem.md": {
+      "notionPageId": "2f9c6073-b579-8132-9bb1-d112f3e08382",
+      "contentHash": "ecf493b2fe9b7787bd10d0b6141525c6f3caadaf5b77992ac9e1906d9ab0fd70",
+      "lastSynced": "2026-01-31T08:32:56.850Z"
+    },
+    "Law of Probability.md": {
+      "notionPageId": "2f9c6073-b579-813d-9224-e6cd657c610a",
+      "contentHash": "7d0db34f2bcc4de93e848c2439d6a4b14c089923bb3f1719c05a224d4e11c7b2",
+      "lastSynced": "2026-01-31T08:32:57.235Z"
+    },
+    "Sampling from a Distribution.md": {
+      "notionPageId": "2f9c6073-b579-8138-acfb-c83002fe3c7f",
+      "contentHash": "7b3e98b87fa77da8a18714e02aea01078c8cb1aaea194c06f31947717dacc8c9",
+      "lastSynced": "2026-01-31T08:33:06.019Z"
+    },
+    "Probability Density Function (PDF).md": {
+      "notionPageId": "2f9c6073-b579-814a-b3e4-ea621db85072",
+      "contentHash": "cc5c6755e533ef9c763a9afef1a752aec1427c24dd4b5d1c25ecdb452712e141",
+      "lastSynced": "2026-01-31T08:33:06.372Z"
+    },
+    "Conjunction.md": {
+      "notionPageId": "2f9c6073-b579-8139-9d8c-cc5a8220a461",
+      "contentHash": "30bfdf7d694d5639c668764ebbe87852e27d18b618a465f189e92b9f749bb297",
+      "lastSynced": "2026-01-31T08:33:10.473Z"
+    },
+    "Probability in Machine Learning.md": {
+      "notionPageId": "2f9c6073-b579-8175-8a3f-e64f5f3ecbd9",
+      "contentHash": "dcfcca1b635d027d29d116d18017b398d5a96f2aebc375428d983d16313819cd",
+      "lastSynced": "2026-01-31T08:33:10.900Z"
+    },
+    "Probability Mass Function (PMF).md": {
+      "notionPageId": "2f9c6073-b579-81fa-b9a9-e915dc92afda",
+      "contentHash": "d474484267b1a80b4e245c7aec1651ef16ac4118692e0529ddbb7f47a3d790dc",
+      "lastSynced": "2026-01-31T08:33:13.403Z"
+    },
+    "Random Variables.md": {
+      "notionPageId": "2f9c6073-b579-810f-a1bf-ce21c463c7a5",
+      "contentHash": "9c42f31e68f98c15994adf9377aed17b8ac02f3e470ff65ebcadff6fe104a918",
+      "lastSynced": "2026-01-31T08:33:15.600Z"
+    },
+    "Naive Bayes Classifier.md": {
+      "notionPageId": "2f9c6073-b579-813f-8586-eaf0c616d882",
+      "contentHash": "954350dd7f45b8edbfce2b467a2da3510dbd95c3e0f3cbbb47322b208621478b",
+      "lastSynced": "2026-01-31T08:33:21.645Z"
+    },
+    "Gaussian Distribution (Normal Distribution).md": {
+      "notionPageId": "2f9c6073-b579-81a5-a023-c2b8c0407609",
+      "contentHash": "890c042ac87bdd85f1823a2fd57e586b82492bea6d27c64424ac4aa47e971bbd",
+      "lastSynced": "2026-01-31T08:33:21.963Z"
+    },
+    "Discrete vs Continuous.md": {
+      "notionPageId": "2f9c6073-b579-818b-8cb3-d7f8945f8189",
+      "contentHash": "8ba976d02fc50415460a302938d7aa9d0878db6c7ad671df159d5b3d484e6ba3",
+      "lastSynced": "2026-01-31T08:33:22.840Z"
+    },
+    "Birthday Problem.md": {
+      "notionPageId": "2f9c6073-b579-81a9-8f4a-da1b4667a5d7",
+      "contentHash": "c5520bb8a48dab047e7734c766b5981cd3b974a945500e8ee7d3041a9660715a",
+      "lastSynced": "2026-01-31T08:33:26.968Z"
+    },
+    "Disjoint Events (Union).md": {
+      "notionPageId": "2f9c6073-b579-81e3-b480-fe08edfc6cd4",
+      "contentHash": "5762cca02cafd75954d1e5290528c80b9ef17b6f481827946f346d399fdd0e30",
+      "lastSynced": "2026-01-31T08:33:30.283Z"
+    },
+    "Binomial Distribution.md": {
+      "notionPageId": "2f9c6073-b579-8118-8e68-e6c106885565",
+      "contentHash": "46a64e2775004d65ff34dc5bdf58f060bb3505b2d8655093bf638879b1125044",
+      "lastSynced": "2026-01-31T08:33:34.164Z"
+    }
+  },
+  "directories": {
+    ".": {
+      "notionPageId": "2f9c6073-b579-8134-ac45-f9ea8b32f4c1"
+    }
+  }
+}
