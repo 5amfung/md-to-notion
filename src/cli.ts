@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { scanInput, scanMultipleInputs } from "./scanner";
 import { importMarkdown } from "./page-creator";
 

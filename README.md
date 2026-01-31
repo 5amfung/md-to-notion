@@ -2,12 +2,16 @@
 
 Import markdown files to Notion, preserving directory structure, formatting, equations, and images.
 
-## Prerequisites
+## Quick Start
 
-- [Bun](https://bun.sh) runtime
+The easiest way to use `md-to-notion` is via `npx` or `bunx` - no installation required!
+
+### Prerequisites
+
+- Node.js (for `npx`) or [Bun](https://bun.sh) (for `bunx`)
 - Notion API key
 
-## Configuration
+### Configuration
 
 1. Create a Notion integration at https://www.notion.so/my-integrations
 2. Copy the API key and set it in your environment:
@@ -16,37 +20,28 @@ Import markdown files to Notion, preserving directory structure, formatting, equ
 export NOTION_API_KEY=your_api_key_here
 ```
 
-Or create a `.env` file in the project root:
-
-```
-NOTION_API_KEY=your_api_key_here
-```
-
 3. Share the destination Notion page with your integration (click "..." menu → "Add connections" → select your integration)
 
-## Installation
+### Usage
 
 ```bash
-bun install
-```
+# Using npx (Node.js)
+npx md-to-notion ./doc <destination_page_id>
 
-## Usage
-
-```bash
-# Import a directory (creates a "doc" page under destination)
-bun run src/cli.ts ./doc <destination_page_id>
+# Using bunx (Bun)
+bunx md-to-notion ./doc <destination_page_id>
 
 # Import directory contents directly under destination (no wrapper page)
-bun run src/cli.ts ./doc/* <destination_page_id>
+npx md-to-notion ./doc/* <destination_page_id>
 
 # Import a single file
-bun run src/cli.ts ./doc/file.md <destination_page_id>
+npx md-to-notion ./doc/file.md <destination_page_id>
 
 # Import multiple specific paths
-bun run src/cli.ts ./doc/foo ./doc/bar ./doc/readme.md <destination_page_id>
+npx md-to-notion ./doc/foo ./doc/bar ./doc/readme.md <destination_page_id>
 
 # With options
-bun run src/cli.ts ./doc <destination_page_id> --verbose --dry-run
+npx md-to-notion ./doc <destination_page_id> --verbose --dry-run
 ```
 
 ### Single Directory vs Glob
@@ -90,3 +85,41 @@ A `.notion-sync.json` file is created in the current working directory to track:
 - Notion page IDs for updates
 
 This enables incremental syncs and failure recovery.
+
+## Local Development
+
+If you prefer to run from source or contribute to the project:
+
+### Installation
+
+```bash
+git clone <repository-url>
+cd md-to-notion
+bun install
+```
+
+### Usage
+
+```bash
+# Import a directory (creates a "doc" page under destination)
+bun run src/cli.ts ./doc <destination_page_id>
+
+# Import directory contents directly under destination (no wrapper page)
+bun run src/cli.ts ./doc/* <destination_page_id>
+
+# Import a single file
+bun run src/cli.ts ./doc/file.md <destination_page_id>
+
+# Import multiple specific paths
+bun run src/cli.ts ./doc/foo ./doc/bar ./doc/readme.md <destination_page_id>
+
+# With options
+bun run src/cli.ts ./doc <destination_page_id> --verbose --dry-run
+```
+
+### Building
+
+```bash
+# Build for distribution
+bun run build
+```

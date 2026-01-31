@@ -1,15 +1,29 @@
 {
   "name": "md-to-notion",
+  "version": "0.1.0",
+  "description": "Import markdown files to Notion, with support for Obsidian syntax",
   "module": "index.ts",
   "type": "module",
-  "private": true,
+  "main": "dist/index.js",
   "bin": {
-    "md-to-notion": "./src/cli.ts"
+    "md-to-notion": "./dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "bun build ./src/cli.ts --outdir ./dist --target node && node -e \"const fs=require('fs');const f='dist/cli.js';const c=fs.readFileSync(f,'utf8');fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c.replace(/^#!.*\\n/,''))\"",
     "start": "bun run src/cli.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
+  "keywords": [
+    "notion",
+    "markdown",
+    "obsidian",
+    "import"
+  ],
+  "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest",
     "@types/js-yaml": "^4.0.9"
