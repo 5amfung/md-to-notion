@@ -456,3 +456,537 @@ function toNotionRichText(segments: RichTextSegment[]): any[] {
   });
 }
 ```
+
+## Highlights (Obsidian Syntax)
+
+**Markdown:**
+```markdown
+This word is ==highlighted== for emphasis.
+```
+
+**Notion block:**
+```typescript
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      { type: "text", text: { content: "This word is " } },
+      {
+        type: "text",
+        text: { content: "highlighted" },
+        annotations: { color: "yellow_background" },
+      },
+      { type: "text", text: { content: " for emphasis." } },
+    ],
+  },
+}
+```
+
+**Parser helper:**
+```typescript
+function parseHighlights(text: string): RichTextSegment[] {
+  const segments: RichTextSegment[] = [];
+  const regex = /==([^=]+)==/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: "text", content: text.slice(lastIndex, match.index) });
+    }
+    segments.push({
+      type: "text",
+      content: match[1],
+      annotations: { color: "yellow_background" },
+    });
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({ type: "text", content: text.slice(lastIndex) });
+  }
+
+  return segments;
+}
+```
+
+## Wiki-Links (Obsidian Syntax)
+
+**Markdown:**
+```markdown
+See [[Neural Networks]] for more details.
+Also check [[Machine Learning|ML basics]].
+```
+
+**Notion blocks (as plain text with formatting):**
+```typescript
+// Option 1: Convert to formatted text (when no URL mapping exists)
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      { type: "text", text: { content: "See " } },
+      {
+        type: "text",
+        text: { content: "Neural Networks" },
+        annotations: { bold: true, color: "blue" },
+      },
+      { type: "text", text: { content: " for more details." } },
+    ],
+  },
+}
+
+// Option 2: Convert to link (when URL mapping exists)
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      { type: "text", text: { content: "See " } },
+      {
+        type: "text",
+        text: {
+          content: "Neural Networks",
+          link: { url: "https://notion.so/page-id-for-neural-networks" },
+        },
+      },
+      { type: "text", text: { content: " for more details." } },
+    ],
+  },
+}
+```
+
+**Parser helper:**
+```typescript
+function parseWikiLinks(text: string): { target: string; display: string; start: number; end: number }[] {
+  const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+  const links: { target: string; display: string; start: number; end: number }[] = [];
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    links.push({
+      target: match[1],
+      display: match[2] || match[1],
+      start: match.index,
+      end: regex.lastIndex,
+    });
+  }
+
+  return links;
+}
+```
+
+## Relative Markdown Links
+
+**Markdown:**
+```markdown
+See [Conditional Probability](W1%20Introduction/Conditional%20Probability.md) for details.
+Check the [book notes](../../../Books/Make%20it%20Stick.md).
+```
+
+**Notion block (convert to plain text or mapped URL):**
+```typescript
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      { type: "text", text: { content: "See " } },
+      {
+        type: "text",
+        text: {
+          content: "Conditional Probability",
+          // If you have a mapping of md files to Notion page IDs:
+          link: { url: "https://notion.so/your-page-id" },
+        },
+      },
+      { type: "text", text: { content: " for details." } },
+    ],
+  },
+}
+```
+
+## Footnotes
+
+**Markdown:**
+```markdown
+This statement needs a citation.[^1]
+
+Another claim here.[^2]
+
+[^1]: Source: Think Bayes 2nd Edition
+[^2]: Proverbs 16:9
+```
+
+**Notion blocks (footnotes as numbered references with content inline or at end):**
+```typescript
+// Main paragraph with superscript reference
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      { type: "text", text: { content: "This statement needs a citation." } },
+      {
+        type: "text",
+        text: { content: "¹" },
+        annotations: { color: "gray" },
+      },
+    ],
+  },
+}
+
+// Footnote section at end of page
+{
+  type: "divider",
+  divider: {},
+}
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      { type: "text", text: { content: "¹ " }, annotations: { color: "gray" } },
+      { type: "text", text: { content: "Source: Think Bayes 2nd Edition" } },
+    ],
+  },
+}
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      { type: "text", text: { content: "² " }, annotations: { color: "gray" } },
+      { type: "text", text: { content: "Proverbs 16:9" } },
+    ],
+  },
+}
+```
+
+**Parser helper:**
+```typescript
+function parseFootnotes(content: string): {
+  body: string;
+  footnotes: Map<string, string>;
+} {
+  const footnoteDefRegex = /^\[\^(\w+)\]:\s*(.+)$/gm;
+  const footnotes = new Map<string, string>();
+  let match;
+
+  while ((match = footnoteDefRegex.exec(content)) !== null) {
+    footnotes.set(match[1], match[2]);
+  }
+
+  // Remove footnote definitions from body
+  const body = content.replace(footnoteDefRegex, "").trim();
+
+  return { body, footnotes };
+}
+
+function replaceFootnoteRefs(text: string, footnotes: Map<string, string>): string {
+  // Convert [^1] to superscript ¹
+  const superscripts = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+  return text.replace(/\[\^(\d+)\]/g, (_, num) => {
+    return num.split("").map((d: string) => superscripts[parseInt(d)]).join("");
+  });
+}
+```
+
+## Blockquotes (Plain, Not Callouts)
+
+**Markdown:**
+```markdown
+> Keep on asking, and you will receive what you ask for.
+> Keep on seeking, and you will find.
+```
+
+**Notion block:**
+```typescript
+{
+  type: "quote",
+  quote: {
+    rich_text: [
+      {
+        type: "text",
+        text: {
+          content: "Keep on asking, and you will receive what you ask for.\nKeep on seeking, and you will find.",
+        },
+      },
+    ],
+    color: "default",
+  },
+}
+```
+
+## Additional Callout Types
+
+**Markdown:**
+```markdown
+> [!note]
+> Conjunction is commutative, but conditional probability is not.
+
+> [!warning] Be Careful
+> This operation is irreversible.
+
+> [!recommended]
+> Start with simple architectures before scaling up.
+```
+
+**Notion blocks:**
+```typescript
+// Note callout
+{
+  type: "callout",
+  callout: {
+    rich_text: [
+      { type: "text", text: { content: "Conjunction is commutative, but conditional probability is not." } },
+    ],
+    icon: { type: "emoji", emoji: "📝" },
+    color: "gray_background",
+  },
+}
+
+// Warning callout
+{
+  type: "callout",
+  callout: {
+    rich_text: [
+      { type: "text", text: { content: "Be Careful\n" }, annotations: { bold: true } },
+      { type: "text", text: { content: "This operation is irreversible." } },
+    ],
+    icon: { type: "emoji", emoji: "⚠️" },
+    color: "orange_background",
+  },
+}
+
+// Recommended callout (custom type - map to appropriate emoji)
+{
+  type: "callout",
+  callout: {
+    rich_text: [
+      { type: "text", text: { content: "Start with simple architectures before scaling up." } },
+    ],
+    icon: { type: "emoji", emoji: "👍" },
+    color: "green_background",
+  },
+}
+```
+
+**Callout type mapping:**
+```typescript
+const CALLOUT_CONFIG: Record<string, { emoji: string; color: string }> = {
+  tip: { emoji: "💡", color: "yellow_background" },
+  note: { emoji: "📝", color: "gray_background" },
+  info: { emoji: "ℹ️", color: "blue_background" },
+  warning: { emoji: "⚠️", color: "orange_background" },
+  danger: { emoji: "🚫", color: "red_background" },
+  example: { emoji: "📋", color: "purple_background" },
+  quote: { emoji: "💬", color: "gray_background" },
+  recommended: { emoji: "👍", color: "green_background" },
+  abstract: { emoji: "📄", color: "blue_background" },
+  success: { emoji: "✅", color: "green_background" },
+  question: { emoji: "❓", color: "yellow_background" },
+  failure: { emoji: "❌", color: "red_background" },
+  bug: { emoji: "🐛", color: "red_background" },
+};
+```
+
+## Local/Relative Image Paths
+
+**Markdown:**
+```markdown
+![](Neural%20Networks-assets/Pasted%20image%2020241227175542.png)
+![Architecture diagram](Activation%20Function-assets/image%203.png)
+```
+
+**Notion block (requires uploading image to external host first):**
+```typescript
+// After uploading to external storage (S3, Cloudflare R2, etc.)
+{
+  type: "image",
+  image: {
+    type: "external",
+    external: { url: "https://your-bucket.s3.amazonaws.com/Neural-Networks-assets/image.png" },
+    caption: [], // Empty if no alt text, or include alt text
+  },
+}
+
+// With caption from alt text
+{
+  type: "image",
+  image: {
+    type: "external",
+    external: { url: "https://your-bucket.s3.amazonaws.com/image-3.png" },
+    caption: [{ type: "text", text: { content: "Architecture diagram" } }],
+  },
+}
+```
+
+**Helper to resolve relative paths:**
+```typescript
+function resolveImagePath(markdownFilePath: string, imagePath: string): string {
+  // Decode URL-encoded spaces
+  const decodedPath = decodeURIComponent(imagePath);
+  // Resolve relative to the markdown file's directory
+  const mdDir = path.dirname(markdownFilePath);
+  return path.resolve(mdDir, decodedPath);
+}
+```
+
+## Multi-line LaTeX (aligned, split, cases)
+
+**Markdown:**
+```markdown
+$$
+\begin{aligned}
+Z_j &= \overrightarrow{W}_j \cdot \overrightarrow{X} + b_j \\
+a_1 &= \frac{e^{Z_1}}{e^{Z_1} + e^{Z_2} + ... + e^{Z_N}}
+\end{aligned}
+$$
+```
+
+**Notion block:**
+```typescript
+{
+  type: "equation",
+  equation: {
+    expression: "\\begin{aligned}\nZ_j &= \\overrightarrow{W}_j \\cdot \\overrightarrow{X} + b_j \\\\\na_1 &= \\frac{e^{Z_1}}{e^{Z_1} + e^{Z_2} + ... + e^{Z_N}}\n\\end{aligned}",
+  },
+}
+```
+
+**Markdown (cases):**
+```markdown
+$$
+loss(a_1, ..., a_N, y) =
+\begin{cases}
+-log(a_1) &\text{if y = 1} \\
+-log(a_2) &\text{if y = 2} \\
+-log(a_N) &\text{if y = N}
+\end{cases}
+$$
+```
+
+**Notion block:**
+```typescript
+{
+  type: "equation",
+  equation: {
+    expression: "loss(a_1, ..., a_N, y) =\n\\begin{cases}\n-log(a_1) &\\text{if y = 1} \\\\\n-log(a_2) &\\text{if y = 2} \\\\\n-log(a_N) &\\text{if y = N}\n\\end{cases}",
+  },
+}
+```
+
+## Numbered Lists
+
+**Markdown:**
+```markdown
+1. How to choose what feature to split?
+2. When do you stop splitting?
+3. Compute weighted average with entropy.
+```
+
+**Notion blocks:**
+```typescript
+[
+  {
+    type: "numbered_list_item",
+    numbered_list_item: {
+      rich_text: [{ type: "text", text: { content: "How to choose what feature to split?" } }],
+    },
+  },
+  {
+    type: "numbered_list_item",
+    numbered_list_item: {
+      rich_text: [{ type: "text", text: { content: "When do you stop splitting?" } }],
+    },
+  },
+  {
+    type: "numbered_list_item",
+    numbered_list_item: {
+      rich_text: [{ type: "text", text: { content: "Compute weighted average with entropy." } }],
+    },
+  },
+]
+```
+
+## Headings with Emoji
+
+**Markdown:**
+```markdown
+## 🚧 3 Must Do Today
+## 📓 Notes from Today
+```
+
+**Notion blocks:**
+```typescript
+// Emoji are preserved as-is in rich_text
+{
+  type: "heading_2",
+  heading_2: {
+    rich_text: [{ type: "text", text: { content: "🚧 3 Must Do Today" } }],
+  },
+}
+{
+  type: "heading_2",
+  heading_2: {
+    rich_text: [{ type: "text", text: { content: "📓 Notes from Today" } }],
+  },
+}
+```
+
+## YouTube Links
+
+**Markdown:**
+```markdown
+[Transformers Explained Visually](https://youtu.be/wjZofJX0v4M?si=WbfUfQgHobfyWsNv)
+```
+
+**Notion blocks (two options):**
+```typescript
+// Option 1: As a bookmark (shows preview)
+{
+  type: "bookmark",
+  bookmark: {
+    url: "https://youtu.be/wjZofJX0v4M?si=WbfUfQgHobfyWsNv",
+    caption: [{ type: "text", text: { content: "Transformers Explained Visually" } }],
+  },
+}
+
+// Option 2: As an embed (embeds the video player)
+{
+  type: "embed",
+  embed: {
+    url: "https://www.youtube.com/watch?v=wjZofJX0v4M",
+  },
+}
+
+// Option 3: As a regular link in paragraph
+{
+  type: "paragraph",
+  paragraph: {
+    rich_text: [
+      {
+        type: "text",
+        text: {
+          content: "Transformers Explained Visually",
+          link: { url: "https://youtu.be/wjZofJX0v4M?si=WbfUfQgHobfyWsNv" },
+        },
+      },
+    ],
+  },
+}
+```
+
+**YouTube URL normalizer:**
+```typescript
+function normalizeYouTubeUrl(url: string): string | null {
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/,
+    /(?:https?:\/\/)?youtu\.be\/([^?]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return `https://www.youtube.com/watch?v=${match[1]}`;
+    }
+  }
+
+  return null;
+}
