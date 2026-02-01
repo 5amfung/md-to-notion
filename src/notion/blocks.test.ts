@@ -120,6 +120,22 @@ describe('buildNotionBlocks', () => {
     expect(item.bulleted_list_item.children.length).toBe(1);
   });
 
+  test('bulleted list item with empty children omits children', async () => {
+    const blocks: Block[] = [
+      {
+        type: 'bulleted_list_item',
+        richText: [{ type: 'text', text: 'Leaf item' }],
+        children: [],
+      },
+    ];
+
+    const result = await buildNotionBlocks(blocks, buildOptions);
+
+    expect(result).toHaveLength(1);
+    const item = result[0] as BlockObjectRequest;
+    expect(item.bulleted_list_item.children).toBeUndefined();
+  });
+
   test('numbered list item', async () => {
     const blocks: Block[] = [
       {

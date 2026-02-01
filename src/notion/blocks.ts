@@ -84,9 +84,10 @@ export async function buildNotionBlocks(
         break;
       case 'bulleted_list_item':
       case 'numbered_list_item': {
-        const children = block.children
-          ? await buildNotionBlocks(block.children, options)
-          : undefined;
+        const children =
+          block.children && block.children.length > 0
+            ? await buildNotionBlocks(block.children, options)
+            : undefined;
         result.push({
           type: block.type,
           [block.type]: {
