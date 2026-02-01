@@ -154,53 +154,58 @@ export async function importMarkdown(
     const relativePath = scan.isDirectory
       ? toRelativePath(scan.rootDir, filePath)
       : path.basename(filePath);
-    const fileHash = await computeHash(filePath);
-    const existing = state.files[relativePath];
-    const shouldUpdate =
-      options.force || !existing || existing.contentHash !== fileHash;
+    try {
+      const fileHash = await computeHash(filePath);
+      const existing = state.files[relativePath];
+      const shouldUpdate =
+        options.force || !existing || existing.contentHash !== fileHash;
 
-    if (!shouldUpdate) {
-      log(`skip: ${relativePath}`, options.verbose);
-      continue;
+      if (!shouldUpdate) {
+        log(`skip: ${relativePath}`, options.verbose);
+        continue;
+      }
+
+      const title = path.basename(filePath, '.md');
+      const fileDir = path.dirname(relativePath);
+      const parentKey = fileDir === '.' ? getRootKey() : fileDir;
+      const parentPageId = scan.isDirectory
+        ? state.directories[parentKey]?.notionPageId
+        : rootPageId;
+
+      if (!parentPageId) {
+        throw new Error(`Missing parent page for ${relativePath}`);
+      }
+
+      if (options.dryRun) {
+        log(
+          `[dry-run] ${existing ? 'update' : 'create'}: ${relativePath}`,
+          options.verbose
+        );
+        continue;
+      }
+
+      const blocks = await buildBlocksForFile(notion, filePath, {
+        verbose: options.verbose,
+      });
+
+      let pageId = existing?.notionPageId;
+      if (pageId) {
+        await replacePageBlocks(notion, pageId, blocks);
+        log(`updated: ${relativePath}`, options.verbose);
+      } else {
+        pageId = await createPageWithBlocks(notion, parentPageId, title, blocks);
+        log(`created: ${relativePath}`, options.verbose);
+      }
+
+      state.files[relativePath] = {
+        notionPageId: pageId,
+        contentHash: fileHash,
+        lastSynced: new Date().toISOString(),
+      };
+      await saveSyncState(state);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Error processing ${relativePath}: ${message}`);
     }
-
-    const title = path.basename(filePath, '.md');
-    const fileDir = path.dirname(relativePath);
-    const parentKey = fileDir === '.' ? getRootKey() : fileDir;
-    const parentPageId = scan.isDirectory
-      ? state.directories[parentKey]?.notionPageId
-      : rootPageId;
-
-    if (!parentPageId) {
-      throw new Error(`Missing parent page for ${relativePath}`);
-    }
-
-    if (options.dryRun) {
-      log(
-        `[dry-run] ${existing ? 'update' : 'create'}: ${relativePath}`,
-        options.verbose
-      );
-      continue;
-    }
-
-    const blocks = await buildBlocksForFile(notion, filePath, {
-      verbose: options.verbose,
-    });
-
-    let pageId = existing?.notionPageId;
-    if (pageId) {
-      await replacePageBlocks(notion, pageId, blocks);
-      log(`updated: ${relativePath}`, options.verbose);
-    } else {
-      pageId = await createPageWithBlocks(notion, parentPageId, title, blocks);
-      log(`created: ${relativePath}`, options.verbose);
-    }
-
-    state.files[relativePath] = {
-      notionPageId: pageId,
-      contentHash: fileHash,
-      lastSynced: new Date().toISOString(),
-    };
-    await saveSyncState(state);
   }
 }

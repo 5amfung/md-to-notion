@@ -123,7 +123,7 @@ describe('run', () => {
           '--dry-run',
         ],
         {
-          cwd: root,
+          cwd: dir,
           env: { ...process.env, NOTION_API_KEY: 'test-key' },
           stdout: 'pipe',
           stderr: 'pipe',
@@ -178,7 +178,7 @@ describe('run', () => {
           '--verbose',
         ],
         {
-          cwd: root,
+          cwd: dir,
           env: { ...process.env, NOTION_API_KEY: 'key' },
           stdout: 'pipe',
           stderr: 'pipe',
