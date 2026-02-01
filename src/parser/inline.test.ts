@@ -114,9 +114,9 @@ describe('parseInline', () => {
     expect(result).toEqual([
       { type: 'text', text: 'See ' },
       {
-        type: 'text',
-        text: 'Page Name',
-        annotations: { bold: true, color: 'blue' },
+        type: 'wiki_link',
+        target: 'Page Name',
+        display: 'Page Name',
       },
       { type: 'text', text: ' for details.' },
     ]);
@@ -127,9 +127,9 @@ describe('parseInline', () => {
     expect(result).toEqual([
       { type: 'text', text: 'See ' },
       {
-        type: 'text',
-        text: 'Custom Display',
-        annotations: { bold: true, color: 'blue' },
+        type: 'wiki_link',
+        target: 'Page Name',
+        display: 'Custom Display',
       },
       { type: 'text', text: ' for details.' },
     ]);
@@ -200,9 +200,9 @@ describe('parseInline', () => {
     expect(result).toEqual([
       { type: 'text', text: 'See ' },
       {
-        type: 'text',
-        text: 'Page',
-        annotations: { bold: true, color: 'blue' },
+        type: 'wiki_link',
+        target: 'page.md',
+        display: 'Page',
       },
       { type: 'text', text: ' for details.' },
     ]);

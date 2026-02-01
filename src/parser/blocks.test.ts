@@ -290,10 +290,10 @@ This is line two.`;
     expect(result[0]?.type).toBe('paragraph');
     if (result[0]?.type === 'paragraph') {
       const [segment] = result[0].richText;
-      expect(segment?.type).toBe('text');
-      if (segment?.type === 'text') {
-        expect(segment.text).toBe('note');
-        expect(segment.annotations).toEqual({ bold: true, color: 'blue' });
+      expect(segment?.type).toBe('wiki_link');
+      if (segment?.type === 'wiki_link') {
+        expect(segment.target).toBe('note');
+        expect(segment.display).toBe('note');
       }
     }
   });
@@ -305,10 +305,10 @@ This is line two.`;
     expect(result[0]?.type).toBe('paragraph');
     if (result[0]?.type === 'paragraph') {
       const [segment] = result[0].richText;
-      expect(segment?.type).toBe('text');
-      if (segment?.type === 'text') {
-        expect(segment.text).toBe('Ref');
-        expect(segment.annotations).toEqual({ bold: true, color: 'blue' });
+      expect(segment?.type).toBe('wiki_link');
+      if (segment?.type === 'wiki_link') {
+        expect(segment.target).toBe('Ref');
+        expect(segment.display).toBe('Ref');
       }
     }
   });

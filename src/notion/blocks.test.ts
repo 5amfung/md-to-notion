@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import type { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -115,7 +114,8 @@ describe('buildNotionBlocks', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('type', 'bulleted_list_item');
-    const item = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const item = result[0] as any;
     expect(item.bulleted_list_item.children).toBeDefined();
     expect(item.bulleted_list_item.children.length).toBe(1);
   });
@@ -132,7 +132,8 @@ describe('buildNotionBlocks', () => {
     const result = await buildNotionBlocks(blocks, buildOptions);
 
     expect(result).toHaveLength(1);
-    const item = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const item = result[0] as any;
     expect(item.bulleted_list_item.children).toBeUndefined();
   });
 
@@ -163,7 +164,8 @@ describe('buildNotionBlocks', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('type', 'to_do');
-    const todo = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const todo = result[0] as any;
     expect(todo.to_do.checked).toBe(false);
   });
 
@@ -179,7 +181,8 @@ describe('buildNotionBlocks', () => {
     const result = await buildNotionBlocks(blocks, buildOptions);
 
     expect(result).toHaveLength(1);
-    const todo = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const todo = result[0] as any;
     expect(todo.to_do.checked).toBe(true);
   });
 
@@ -196,7 +199,8 @@ describe('buildNotionBlocks', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('type', 'code');
-    const code = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const code = result[0] as any;
     expect(code.code.language).toBe('typescript');
     expect(code.code.rich_text[0].text.content).toBe('const x = 1;');
   });
@@ -229,7 +233,8 @@ describe('buildNotionBlocks', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('type', 'callout');
-    const callout = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const callout = result[0] as any;
     expect(callout.callout.icon.emoji).toBe('💡');
     expect(callout.callout.color).toBe('yellow_background');
   });
@@ -246,7 +251,8 @@ describe('buildNotionBlocks', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('type', 'equation');
-    const equation = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const equation = result[0] as any;
     expect(equation.equation.expression).toBe('E = mc^2');
   });
 
@@ -282,7 +288,8 @@ describe('buildNotionBlocks', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('type', 'table');
-    const table = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const table = result[0] as any;
     expect(table.table.has_column_header).toBe(true);
     expect(table.table.has_row_header).toBe(false);
     expect(table.table.children.length).toBe(2);
@@ -301,7 +308,8 @@ describe('buildNotionBlocks', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('type', 'image');
-    const image = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const image = result[0] as any;
     expect(image.image.type).toBe('external');
     expect(image.image.external.url).toBe('https://example.com/image.png');
   });
@@ -340,7 +348,8 @@ describe('buildNotionBlocks', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]).toHaveProperty('type', 'image');
-      const image = result[0] as BlockObjectRequest;
+      // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+      const image = result[0] as any;
       expect(image.image.type).toBe('file_upload');
       expect(image.image.file_upload.id).toBe(`upload-id-${imagePath}`);
       expect(image.image.caption).toBeDefined();
@@ -363,7 +372,8 @@ describe('buildNotionBlocks', () => {
     const result = await buildNotionBlocks(blocks, buildOptions);
 
     expect(result).toHaveLength(1);
-    const paragraph = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const paragraph = result[0] as any;
     expect(paragraph.paragraph.rich_text.length).toBe(2);
     expect(paragraph.paragraph.rich_text[0].annotations.bold).toBe(true);
     expect(paragraph.paragraph.rich_text[1].annotations.italic).toBe(true);
@@ -380,10 +390,60 @@ describe('buildNotionBlocks', () => {
     const result = await buildNotionBlocks(blocks, buildOptions);
 
     expect(result).toHaveLength(1);
-    const paragraph = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const paragraph = result[0] as any;
     expect(paragraph.paragraph.rich_text[0].text.link.url).toBe(
       'https://example.com'
     );
+  });
+
+  test('wiki-link resolves to page mention', async () => {
+    const blocks: Block[] = [
+      {
+        type: 'paragraph',
+        richText: [
+          { type: 'wiki_link', target: 'Page Name', display: 'Custom Display' },
+        ],
+      },
+    ];
+
+    const result = await buildNotionBlocks(blocks, {
+      ...buildOptions,
+      resolveWikiLink: (target) =>
+        target === 'Page Name' ? 'page-id-123' : null,
+    });
+
+    expect(result).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const paragraph = result[0] as any;
+    expect(paragraph.paragraph.rich_text[0].type).toBe('mention');
+    expect(paragraph.paragraph.rich_text[0].mention.page.id).toBe(
+      'page-id-123'
+    );
+  });
+
+  test('wiki-link falls back to styled text when unresolved', async () => {
+    const blocks: Block[] = [
+      {
+        type: 'paragraph',
+        richText: [
+          {
+            type: 'wiki_link',
+            target: 'Missing Page',
+            display: 'Missing Page',
+          },
+        ],
+      },
+    ];
+
+    const result = await buildNotionBlocks(blocks, buildOptions);
+
+    expect(result).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const paragraph = result[0] as any;
+    expect(paragraph.paragraph.rich_text[0].text.content).toBe('Missing Page');
+    expect(paragraph.paragraph.rich_text[0].annotations.bold).toBe(true);
+    expect(paragraph.paragraph.rich_text[0].annotations.color).toBe('blue');
   });
 
   test('inline equation', async () => {
@@ -400,7 +460,8 @@ describe('buildNotionBlocks', () => {
     const result = await buildNotionBlocks(blocks, buildOptions);
 
     expect(result).toHaveLength(1);
-    const paragraph = result[0] as BlockObjectRequest;
+    // biome-ignore lint/suspicious/noExplicitAny: Notion SDK types are complex discriminated unions
+    const paragraph = result[0] as any;
     expect(paragraph.paragraph.rich_text.length).toBe(2);
     expect(paragraph.paragraph.rich_text[1].type).toBe('equation');
     expect(paragraph.paragraph.rich_text[1].equation.expression).toBe(

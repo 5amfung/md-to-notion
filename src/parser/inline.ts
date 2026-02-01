@@ -17,6 +17,11 @@ export type InlineSegment =
       link?: string | null;
     }
   | {
+      type: 'wiki_link';
+      target: string;
+      display: string;
+    }
+  | {
       type: 'equation';
       text: string;
     };
@@ -39,7 +44,7 @@ function isRelativeMarkdownLink(url: string): boolean {
   return /\.md($|[?#])/i.test(url) || !/^[a-z]+:/i.test(url);
 }
 
-function toStyledInternalText(text: string): InlineSegment[] {
+export function toStyledInternalText(text: string): InlineSegment[] {
   return [
     {
       type: 'text',
@@ -61,8 +66,9 @@ export function parseInline(text: string): InlineSegment[] {
     {
       regex: /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/,
       handler: (match) => {
-        const display = match[2] ?? match[1] ?? '';
-        return toStyledInternalText(display);
+        const target = match[1] ?? '';
+        const display = match[2] ?? target;
+        return [{ type: 'wiki_link', target, display }];
       },
     },
     {
@@ -71,7 +77,7 @@ export function parseInline(text: string): InlineSegment[] {
         const label = match[1] ?? '';
         const url = match[2] ?? '';
         if (isRelativeMarkdownLink(url)) {
-          return toStyledInternalText(label);
+          return [{ type: 'wiki_link', target: url, display: label }];
         }
         return [
           {

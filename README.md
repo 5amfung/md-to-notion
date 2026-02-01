@@ -2,6 +2,24 @@
 
 Import markdown files to Notion, preserving directory structure, formatting, equations, and images.
 
+## Features
+
+- **Two pass sync**: Handle Markdown link and wiki-links between pages
+- **Directory mirroring**: Folder structure is preserved as nested Notion pages
+- **Idempotent**: Re-running the command only syncs changed files
+- **Markdown support**: Headings, lists, tables, code blocks, callouts, equations, images
+- **Obsidian syntax**: Wiki-links, highlights, callouts
+- **Image upload**: Local images are uploaded to Notion automatically
+
+## Sync State
+
+A `.notion-sync.json` file is created in the current working directory to track:
+- Which files have been imported
+- Content hashes for change detection
+- Notion page IDs for updates
+
+This enables incremental syncs and failure recovery.
+
 ## Quick Start
 
 The easiest way to use `md-to-notion` is via `npx` or `bunx` - no installation required!
@@ -68,23 +86,6 @@ https://www.notion.so/Obsidian-Import-Test-2f9c6073b5798033ae84dba25ed3f741
                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                                            This is the page ID (remove dashes)
 ```
-
-## Features
-
-- **Directory mirroring**: Folder structure is preserved as nested Notion pages
-- **Idempotent**: Re-running the command only syncs changed files
-- **Markdown support**: Headings, lists, tables, code blocks, callouts, equations, images
-- **Obsidian syntax**: Wiki-links, highlights, callouts
-- **Image upload**: Local images are uploaded to Notion automatically
-
-## Sync State
-
-A `.notion-sync.json` file is created in the current working directory to track:
-- Which files have been imported
-- Content hashes for change detection
-- Notion page IDs for updates
-
-This enables incremental syncs and failure recovery.
 
 ## Local Development
 

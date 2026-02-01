@@ -365,6 +365,68 @@ describe('importMarkdown', () => {
     expect(updated.files['test.md']?.notionPageId).toBe('existing-page-id');
   });
 
+  test('resolves wiki-links to page mentions', async () => {
+    const subdir = join(testDir, 'A');
+    await mkdir(subdir);
+    const targetPath = join(subdir, 'Page Foo.md');
+    const topPath = join(testDir, 'Top.md');
+    await writeFile(targetPath, '# Page Foo');
+    await writeFile(topPath, 'See [[A/Page Foo]]');
+
+    const scan: ScanResult = {
+      inputPath: testDir,
+      isDirectory: true,
+      rootDir: testDir,
+      rootName: 'test-dir',
+      mdFiles: [targetPath, topPath],
+      directories: [subdir],
+      createRootPage: false,
+    };
+
+    const notion = {
+      pages: {
+        create: mock(
+          async (payload: {
+            properties?: {
+              title?: { title?: { text?: { content?: string } }[] };
+            };
+          }) => {
+            const title =
+              payload.properties?.title?.title?.[0]?.text?.content ?? 'unknown';
+            return { id: `page-${String(title).replace(/\s+/g, '-')}` };
+          }
+        ),
+      },
+      blocks: {
+        children: {
+          append: mock(async () => ({})),
+          list: mock(async () => ({ results: [], has_more: false })),
+        },
+        delete: mock(async () => ({})),
+      },
+      fileUploads: {
+        create: mock(async () => ({ id: 'upload-id' })),
+        send: mock(async () => ({})),
+      },
+    } as unknown as Client;
+
+    await importMarkdown(scan, 'dest-page-id', {
+      notionClient: notion,
+      verbose: true,
+    });
+
+    const appendMock = notion.blocks.children.append as ReturnType<typeof mock>;
+    const topAppendCall = appendMock.mock.calls.find(
+      ([args]) => args.block_id === 'page-Top'
+    );
+    expect(topAppendCall).toBeDefined();
+    const topBlocks = topAppendCall?.[0].children ?? [];
+    expect(topBlocks[0].paragraph.rich_text[1].type).toBe('mention');
+    expect(topBlocks[0].paragraph.rich_text[1].mention.page.id).toBe(
+      'page-Page-Foo'
+    );
+  });
+
   test('skip logs when verbose', async () => {
     const filePath = join(testDir, 'test.md');
     await writeFile(filePath, '# Content');

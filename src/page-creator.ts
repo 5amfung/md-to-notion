@@ -46,6 +46,36 @@ function getParentKey(relativeDir: string): string {
   return parent === '.' ? getRootKey() : parent;
 }
 
+function normalizeWikiTarget(target: string): string {
+  const decoded = decodeURIComponent(target);
+  return decoded.replace(/\.md$/i, '');
+}
+
+function resolveWikiLinkTarget(
+  target: string,
+  currentFilePath: string,
+  state: SyncState,
+  scan: ScanResult
+): string | null {
+  const normalizedTarget = normalizeWikiTarget(target);
+  if (!normalizedTarget) return null;
+
+  const currentRelativePath = toRelativePath(scan.rootDir, currentFilePath);
+  const currentDir = path.dirname(currentRelativePath);
+  const hasPathSeparator = /[\\/]/.test(normalizedTarget);
+  const isExplicitRelative =
+    normalizedTarget.startsWith('./') || normalizedTarget.startsWith('../');
+
+  const targetWithExtension = `${normalizedTarget}.md`;
+  const candidateRelative = isExplicitRelative
+    ? path.normalize(path.join(currentDir, targetWithExtension))
+    : hasPathSeparator
+      ? path.normalize(targetWithExtension)
+      : path.normalize(path.join(currentDir, targetWithExtension));
+
+  return state.files[candidateRelative]?.notionPageId ?? null;
+}
+
 async function ensureDirectoryPages(
   notion: Client,
   state: SyncState,
@@ -108,7 +138,10 @@ async function ensureDirectoryPages(
 async function buildBlocksForFile(
   notion: Client,
   filePath: string,
-  options?: { verbose?: boolean }
+  options?: {
+    verbose?: boolean;
+    resolveWikiLink?: (target: string) => string | null;
+  }
 ): Promise<BlockObjectRequest[]> {
   const content = await Bun.file(filePath).text();
   const parsedBlocks = parseMarkdown(content, filePath);
@@ -123,6 +156,7 @@ async function buildBlocksForFile(
         ],
       },
     }),
+    resolveWikiLink: options?.resolveWikiLink,
   });
 }
 
@@ -148,6 +182,37 @@ export async function importMarkdown(
       destinationPageId,
       options
     );
+  }
+
+  for (const filePath of scan.mdFiles) {
+    const relativePath = scan.isDirectory
+      ? toRelativePath(scan.rootDir, filePath)
+      : path.basename(filePath);
+    if (state.files[relativePath]) continue;
+
+    const title = path.basename(filePath, '.md');
+    const fileDir = path.dirname(relativePath);
+    const parentKey = fileDir === '.' ? getRootKey() : fileDir;
+    const parentPageId = scan.isDirectory
+      ? state.directories[parentKey]?.notionPageId
+      : rootPageId;
+
+    if (!parentPageId) {
+      throw new Error(`Missing parent page for ${relativePath}`);
+    }
+
+    if (options.dryRun) {
+      log(`[dry-run] create: ${relativePath}`, options.verbose);
+      continue;
+    }
+
+    const pageId = await createPageWithBlocks(notion, parentPageId, title, []);
+    state.files[relativePath] = {
+      notionPageId: pageId,
+      contentHash: '',
+      lastSynced: new Date(0).toISOString(),
+    };
+    await saveSyncState(state);
   }
 
   for (const filePath of scan.mdFiles) {
@@ -186,6 +251,8 @@ export async function importMarkdown(
 
       const blocks = await buildBlocksForFile(notion, filePath, {
         verbose: options.verbose,
+        resolveWikiLink: (target) =>
+          resolveWikiLinkTarget(target, filePath, state, scan),
       });
 
       let pageId = existing?.notionPageId;
@@ -193,7 +260,12 @@ export async function importMarkdown(
         await replacePageBlocks(notion, pageId, blocks);
         log(`updated: ${relativePath}`, options.verbose);
       } else {
-        pageId = await createPageWithBlocks(notion, parentPageId, title, blocks);
+        pageId = await createPageWithBlocks(
+          notion,
+          parentPageId,
+          title,
+          blocks
+        );
         log(`created: ${relativePath}`, options.verbose);
       }
 

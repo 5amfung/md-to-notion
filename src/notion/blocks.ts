@@ -8,12 +8,30 @@ type NotionBlock = Record<string, unknown>;
 export type BuildOptions = {
   uploadLocalImage: (filePath: string) => Promise<string>;
   missingImagePlaceholder: (imagePath: string) => NotionBlock;
+  resolveWikiLink?: (target: string) => string | null;
 };
 
-function toRichText(segments: InlineSegment[]): RichText[] {
+function toRichText(
+  segments: InlineSegment[],
+  options?: BuildOptions
+): RichText[] {
   return segments.map((segment) => {
     if (segment.type === 'equation') {
       return { type: 'equation', equation: { expression: segment.text } };
+    }
+    if (segment.type === 'wiki_link') {
+      const resolvedPageId = options?.resolveWikiLink?.(segment.target);
+      if (resolvedPageId) {
+        return {
+          type: 'mention',
+          mention: { type: 'page', page: { id: resolvedPageId } },
+        };
+      }
+      return {
+        type: 'text',
+        text: { content: segment.display },
+        annotations: { bold: true, color: 'blue' },
+      };
     }
     const annotations = segment.annotations || {};
     return {
@@ -39,7 +57,7 @@ async function buildImageBlock(
       image: {
         type: 'external',
         external: { url: source.url },
-        caption: toRichText(caption),
+        caption: toRichText(caption, options),
       },
     };
   }
@@ -55,7 +73,7 @@ async function buildImageBlock(
     image: {
       type: 'file_upload',
       file_upload: { id: uploadId },
-      caption: toRichText(caption),
+      caption: toRichText(caption, options),
     },
   };
 }
@@ -71,7 +89,7 @@ export async function buildNotionBlocks(
       case 'paragraph':
         result.push({
           type: 'paragraph',
-          paragraph: { rich_text: toRichText(block.richText) },
+          paragraph: { rich_text: toRichText(block.richText, options) },
         });
         break;
       case 'heading_1':
@@ -79,7 +97,7 @@ export async function buildNotionBlocks(
       case 'heading_3':
         result.push({
           type: block.type,
-          [block.type]: { rich_text: toRichText(block.richText) },
+          [block.type]: { rich_text: toRichText(block.richText, options) },
         });
         break;
       case 'bulleted_list_item':
@@ -91,7 +109,7 @@ export async function buildNotionBlocks(
         result.push({
           type: block.type,
           [block.type]: {
-            rich_text: toRichText(block.richText),
+            rich_text: toRichText(block.richText, options),
             children,
           },
         });
@@ -101,7 +119,7 @@ export async function buildNotionBlocks(
         result.push({
           type: 'to_do',
           to_do: {
-            rich_text: toRichText(block.richText),
+            rich_text: toRichText(block.richText, options),
             checked: block.checked,
           },
         });
@@ -124,7 +142,7 @@ export async function buildNotionBlocks(
         result.push({
           type: 'quote',
           quote: {
-            rich_text: toRichText(block.richText),
+            rich_text: toRichText(block.richText, options),
             color: 'default',
           },
         });
@@ -133,7 +151,7 @@ export async function buildNotionBlocks(
         result.push({
           type: 'callout',
           callout: {
-            rich_text: toRichText(block.richText),
+            rich_text: toRichText(block.richText, options),
             icon: { type: 'emoji', emoji: block.emoji },
             color: block.color,
           },
@@ -157,7 +175,7 @@ export async function buildNotionBlocks(
         const rows = block.rows.map((row) => ({
           type: 'table_row',
           table_row: {
-            cells: row.map((cell) => toRichText(cell)),
+            cells: row.map((cell) => toRichText(cell, options)),
           },
         }));
         result.push({
