@@ -11,10 +11,12 @@ import { buildNotionBlocks } from "./notion/blocks";
 import { createNotionClient, createPageWithBlocks, replacePageBlocks } from "./notion/client";
 import { uploadFile } from "./notion/upload";
 
-type ImportOptions = {
+export type ImportOptions = {
   dryRun?: boolean;
   force?: boolean;
   verbose?: boolean;
+  /** Optional Notion client for testing; when not provided, one is created from NOTION_API_KEY. */
+  notionClient?: Client;
 };
 
 function log(message: string, verbose?: boolean) {
@@ -122,7 +124,7 @@ export async function importMarkdown(
     return;
   }
 
-  const notion = createNotionClient();
+  const notion = options.notionClient ?? createNotionClient();
   const state = await loadSyncState(destinationPageId);
 
   let rootPageId = destinationPageId;

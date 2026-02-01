@@ -4,7 +4,7 @@ import { Client } from "@notionhq/client";
 const TWENTY_MB = 20 * 1024 * 1024;
 const TEN_MB = 10 * 1024 * 1024;
 
-function guessContentType(filePath: string): string {
+export function guessContentType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   switch (ext) {
     case ".png":
@@ -23,7 +23,7 @@ function guessContentType(filePath: string): string {
   }
 }
 
-function splitIntoChunks(buffer: Buffer, chunkSize: number): Buffer[] {
+export function splitIntoChunks(buffer: Buffer, chunkSize: number): Buffer[] {
   const chunks: Buffer[] = [];
   for (let i = 0; i < buffer.length; i += chunkSize) {
     chunks.push(buffer.subarray(i, i + chunkSize));

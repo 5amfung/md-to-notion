@@ -8,7 +8,7 @@ type CliOptions = {
   verbose: boolean;
 };
 
-function parseArgs(args: string[]): { inputPaths: string[]; pageId: string; options: CliOptions } {
+export function parseArgs(args: string[]): { inputPaths: string[]; pageId: string; options: CliOptions } {
   const options: CliOptions = {
     force: false,
     dryRun: false,
@@ -38,7 +38,7 @@ function parseArgs(args: string[]): { inputPaths: string[]; pageId: string; opti
   };
 }
 
-async function run() {
+export async function run(): Promise<void> {
   try {
     const { inputPaths, pageId, options } = parseArgs(process.argv.slice(2));
     if (!process.env.NOTION_API_KEY) {
@@ -57,4 +57,7 @@ async function run() {
   }
 }
 
-run();
+// Only run when executed directly, not when imported
+if (import.meta.main) {
+  run();
+}

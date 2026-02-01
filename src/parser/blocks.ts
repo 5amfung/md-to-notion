@@ -164,11 +164,13 @@ function parseList(
       block = {
         type: "numbered_list_item",
         richText: parseInline(numberMatch[2]!),
+        children: [],
       };
     } else {
       block = {
         type: "bulleted_list_item",
         richText: parseInline(bulletMatch![2]!),
+        children: [],
       };
     }
 
