@@ -140,3 +140,6 @@ vite.config.ts.timestamp-*
 
 # Test data for import to Notion
 data-example/
+
+# Artifact from running md-to-notion
+.notion-sync.json
