@@ -1,4 +1,4 @@
-import path from "path";
+import path from 'node:path';
 
 export type InlineAnnotations = {
   bold?: boolean;
@@ -11,26 +11,26 @@ export type InlineAnnotations = {
 
 export type InlineSegment =
   | {
-      type: "text";
+      type: 'text';
       text: string;
       annotations?: InlineAnnotations;
       link?: string | null;
     }
   | {
-      type: "equation";
+      type: 'equation';
       text: string;
     };
 
 type MatchHandler = (match: RegExpMatchArray) => InlineSegment[];
 
-const SUPERSCRIPTS = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
+const SUPERSCRIPTS = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
 
 export function replaceFootnoteRefs(text: string): string {
   return text.replace(/\[\^(\d+)\]/g, (_, num) => {
     return String(num)
-      .split("")
+      .split('')
       .map((digit: string) => SUPERSCRIPTS[Number.parseInt(digit, 10)])
-      .join("");
+      .join('');
   });
 }
 
@@ -42,9 +42,9 @@ function isRelativeMarkdownLink(url: string): boolean {
 function toStyledInternalText(text: string): InlineSegment[] {
   return [
     {
-      type: "text",
+      type: 'text',
       text,
-      annotations: { bold: true, color: "blue" },
+      annotations: { bold: true, color: 'blue' },
     },
   ];
 }
@@ -56,26 +56,26 @@ export function parseInline(text: string): InlineSegment[] {
   const patterns: { regex: RegExp; handler: MatchHandler }[] = [
     {
       regex: /\$([^$]+)\$/,
-      handler: (match) => [{ type: "equation", text: match[1]! }],
+      handler: (match) => [{ type: 'equation', text: match[1] ?? '' }],
     },
     {
       regex: /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/,
       handler: (match) => {
-        const display = match[2] ?? match[1]!;
+        const display = match[2] ?? match[1] ?? '';
         return toStyledInternalText(display);
       },
     },
     {
       regex: /\[([^\]]+)\]\(([^)]+)\)/,
       handler: (match) => {
-        const label = match[1]!;
-        const url = match[2]!;
+        const label = match[1] ?? '';
+        const url = match[2] ?? '';
         if (isRelativeMarkdownLink(url)) {
           return toStyledInternalText(label);
         }
         return [
           {
-            type: "text",
+            type: 'text',
             text: label,
             link: url,
           },
@@ -86,9 +86,9 @@ export function parseInline(text: string): InlineSegment[] {
       regex: /==([^=]+)==/,
       handler: (match) => [
         {
-          type: "text",
-          text: match[1]!,
-          annotations: { color: "yellow_background" },
+          type: 'text',
+          text: match[1] ?? '',
+          annotations: { color: 'yellow_background' },
         },
       ],
     },
@@ -96,61 +96,71 @@ export function parseInline(text: string): InlineSegment[] {
       // Bold + Italic: ***text*** or ___text___
       regex: /\*\*\*([^*]+)\*\*\*/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { bold: true, italic: true } },
+        {
+          type: 'text',
+          text: match[1] ?? '',
+          annotations: { bold: true, italic: true },
+        },
       ],
     },
     {
       regex: /___([^_]+)___/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { bold: true, italic: true } },
+        {
+          type: 'text',
+          text: match[1] ?? '',
+          annotations: { bold: true, italic: true },
+        },
       ],
     },
     {
       regex: /\*\*([^*]+)\*\*/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { bold: true } },
+        { type: 'text', text: match[1] ?? '', annotations: { bold: true } },
       ],
     },
     {
       regex: /__([^_]+)__/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { bold: true } },
+        { type: 'text', text: match[1] ?? '', annotations: { bold: true } },
       ],
     },
     {
       regex: /`([^`]+)`/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { code: true } },
+        { type: 'text', text: match[1] ?? '', annotations: { code: true } },
       ],
     },
     {
       regex: /~~([^~]+)~~/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { strikethrough: true } },
+        {
+          type: 'text',
+          text: match[1] ?? '',
+          annotations: { strikethrough: true },
+        },
       ],
     },
     {
       regex: /\*([^*]+)\*/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { italic: true } },
+        { type: 'text', text: match[1] ?? '', annotations: { italic: true } },
       ],
     },
     {
       regex: /_([^_]+)_/,
       handler: (match) => [
-        { type: "text", text: match[1]!, annotations: { italic: true } },
+        { type: 'text', text: match[1] ?? '', annotations: { italic: true } },
       ],
     },
   ];
 
   while (remaining.length > 0) {
-    let earliestMatch:
-      | {
-          index: number;
-          match: RegExpMatchArray;
-          handler: MatchHandler;
-        }
-      | null = null;
+    let earliestMatch: {
+      index: number;
+      match: RegExpMatchArray;
+      handler: MatchHandler;
+    } | null = null;
 
     for (const pattern of patterns) {
       const match = remaining.match(pattern.regex);
@@ -167,14 +177,14 @@ export function parseInline(text: string): InlineSegment[] {
 
     if (!earliestMatch) {
       if (remaining) {
-        segments.push({ type: "text", text: remaining });
+        segments.push({ type: 'text', text: remaining });
       }
       break;
     }
 
     if (earliestMatch.index > 0) {
       segments.push({
-        type: "text",
+        type: 'text',
         text: remaining.slice(0, earliestMatch.index),
       });
     }
@@ -189,7 +199,10 @@ export function parseInline(text: string): InlineSegment[] {
   return segments;
 }
 
-export function resolveImagePath(markdownFilePath: string, imagePath: string): string {
+export function resolveImagePath(
+  markdownFilePath: string,
+  imagePath: string
+): string {
   const decodedPath = decodeURIComponent(imagePath);
   const mdDir = path.dirname(markdownFilePath);
   return path.resolve(mdDir, decodedPath);

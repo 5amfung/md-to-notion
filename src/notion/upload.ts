@@ -1,5 +1,5 @@
-import path from "path";
-import { Client } from "@notionhq/client";
+import path from 'node:path';
+import type { Client } from '@notionhq/client';
 
 const TWENTY_MB = 20 * 1024 * 1024;
 const TEN_MB = 10 * 1024 * 1024;
@@ -7,19 +7,19 @@ const TEN_MB = 10 * 1024 * 1024;
 export function guessContentType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   switch (ext) {
-    case ".png":
-      return "image/png";
-    case ".jpg":
-    case ".jpeg":
-      return "image/jpeg";
-    case ".gif":
-      return "image/gif";
-    case ".webp":
-      return "image/webp";
-    case ".svg":
-      return "image/svg+xml";
+    case '.png':
+      return 'image/png';
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.gif':
+      return 'image/gif';
+    case '.webp':
+      return 'image/webp';
+    case '.svg':
+      return 'image/svg+xml';
     default:
-      return "application/octet-stream";
+      return 'application/octet-stream';
   }
 }
 
@@ -38,7 +38,7 @@ async function uploadSmallFile(
   contentType: string
 ): Promise<string> {
   const upload = await notion.fileUploads.create({
-    mode: "single_part",
+    mode: 'single_part',
     filename,
     content_type: contentType,
   });
@@ -62,7 +62,7 @@ async function uploadLargeFile(
 ): Promise<string> {
   const parts = splitIntoChunks(data, TEN_MB);
   const upload = await notion.fileUploads.create({
-    mode: "multi_part",
+    mode: 'multi_part',
     number_of_parts: parts.length,
     filename,
     content_type: contentType,

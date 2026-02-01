@@ -1,5 +1,5 @@
-import { Client } from "@notionhq/client";
-import type { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
+import { Client } from '@notionhq/client';
+import type { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
 
 const MAX_BLOCKS_PER_REQUEST = 100;
 
@@ -23,7 +23,11 @@ export async function createPageWithBlocks(
     children: blocks.slice(0, MAX_BLOCKS_PER_REQUEST),
   });
 
-  for (let i = MAX_BLOCKS_PER_REQUEST; i < blocks.length; i += MAX_BLOCKS_PER_REQUEST) {
+  for (
+    let i = MAX_BLOCKS_PER_REQUEST;
+    i < blocks.length;
+    i += MAX_BLOCKS_PER_REQUEST
+  ) {
     await notion.blocks.children.append({
       block_id: page.id,
       children: blocks.slice(i, i + MAX_BLOCKS_PER_REQUEST),
@@ -59,7 +63,7 @@ export async function listAllBlocks(
       page_size: 100,
     });
     for (const child of response.results) {
-      if ("id" in child) {
+      if ('id' in child) {
         blockIds.push(child.id);
       }
     }

@@ -1,5 +1,5 @@
-import path from "path";
-import { readdir, stat } from "fs/promises";
+import { readdir, stat } from 'node:fs/promises';
+import path from 'node:path';
 
 export type ScanResult = {
   inputPath: string;
@@ -11,7 +11,10 @@ export type ScanResult = {
   createRootPage: boolean; // Whether to create a wrapper page for the root
 };
 
-async function collectMarkdownFiles(dir: string, files: string[]): Promise<void> {
+async function collectMarkdownFiles(
+  dir: string,
+  files: string[]
+): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
@@ -20,8 +23,8 @@ async function collectMarkdownFiles(dir: string, files: string[]): Promise<void>
       continue;
     }
     if (!entry.isFile()) continue;
-    if (entry.name.endsWith(".canvas")) continue;
-    if (entry.name.endsWith(".md")) {
+    if (entry.name.endsWith('.canvas')) continue;
+    if (entry.name.endsWith('.md')) {
       files.push(fullPath);
     }
   }
@@ -46,14 +49,14 @@ export async function scanInput(inputPath: string): Promise<ScanResult> {
   const resolved = path.resolve(inputPath);
   const stats = await stat(resolved);
   if (stats.isFile()) {
-    if (!resolved.endsWith(".md")) {
+    if (!resolved.endsWith('.md')) {
       throw new Error(`Input file must be .md: ${resolved}`);
     }
     return {
       inputPath: resolved,
       isDirectory: false,
       rootDir: path.dirname(resolved),
-      rootName: path.basename(resolved, ".md"),
+      rootName: path.basename(resolved, '.md'),
       mdFiles: [resolved],
       directories: [],
       createRootPage: false, // Single file doesn't need a root page
@@ -79,26 +82,31 @@ export async function scanInput(inputPath: string): Promise<ScanResult> {
   };
 }
 
-export async function scanMultipleInputs(inputPaths: string[]): Promise<ScanResult> {
+export async function scanMultipleInputs(
+  inputPaths: string[]
+): Promise<ScanResult> {
   if (inputPaths.length === 0) {
-    throw new Error("No input paths provided");
+    throw new Error('No input paths provided');
   }
 
   if (inputPaths.length === 1) {
-    return scanInput(inputPaths[0]!);
+    const single = inputPaths[0];
+    if (single === undefined) throw new Error('No input paths provided');
+    return scanInput(single);
   }
 
   // Multiple inputs: find common parent directory
   const resolvedPaths = inputPaths
     .map((p) => path.resolve(p))
-    .filter((p) => !p.endsWith(".notion-sync.json")); // Skip sync state files
+    .filter((p) => !p.endsWith('.notion-sync.json')); // Skip sync state files
 
   if (resolvedPaths.length === 0) {
-    throw new Error("No valid input paths provided");
+    throw new Error('No valid input paths provided');
   }
 
   // Determine the common parent directory
-  const firstPath = resolvedPaths[0]!;
+  const firstPath = resolvedPaths[0];
+  if (firstPath === undefined) throw new Error('No valid input paths provided');
   let commonParent = path.dirname(firstPath);
   for (const p of resolvedPaths) {
     while (!p.startsWith(commonParent + path.sep) && p !== commonParent) {
@@ -113,7 +121,7 @@ export async function scanMultipleInputs(inputPaths: string[]): Promise<ScanResu
     try {
       const stats = await stat(resolved);
       if (stats.isFile()) {
-        if (resolved.endsWith(".md")) {
+        if (resolved.endsWith('.md')) {
           mdFiles.push(resolved);
         }
       } else if (stats.isDirectory()) {
@@ -122,7 +130,6 @@ export async function scanMultipleInputs(inputPaths: string[]): Promise<ScanResu
       }
     } catch {
       // Skip paths that don't exist
-      continue;
     }
   }
 
@@ -130,7 +137,9 @@ export async function scanMultipleInputs(inputPaths: string[]): Promise<ScanResu
   const allDirectories = deriveDirectories(commonParent, mdFiles);
   // Filter to only include the input subdirs and their children
   const relevantDirs = allDirectories.filter((dir) =>
-    subDirs.some((subDir) => dir === subDir || dir.startsWith(subDir + path.sep))
+    subDirs.some(
+      (subDir) => dir === subDir || dir.startsWith(subDir + path.sep)
+    )
   );
 
   return {

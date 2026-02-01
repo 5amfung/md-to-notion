@@ -16,7 +16,8 @@
     "start": "bun run src/cli.ts",
     "test": "bun test",
     "test:cov": "bun test --coverage",
-    "lint": "tsc --noEmit",
+    "lint": "biome lint",
+    "format": "biome format --write",
     "prepublishOnly": "bun run build"
   },
   "keywords": [
@@ -27,6 +28,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "2.3.13",
     "@types/bun": "latest",
     "@types/js-yaml": "^4.0.9"
   },

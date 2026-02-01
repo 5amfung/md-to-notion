@@ -1,10 +1,13 @@
-import { stripFrontmatter } from "./frontmatter";
-import { parseMarkdownBlocks } from "./blocks";
-import type { Block } from "./blocks";
+import type { Block } from './blocks';
+import { parseMarkdownBlocks } from './blocks';
+import { stripFrontmatter } from './frontmatter';
 
-export function parseMarkdown(content: string, markdownFilePath: string): Block[] {
+export function parseMarkdown(
+  content: string,
+  markdownFilePath: string
+): Block[] {
   const { body } = stripFrontmatter(content);
   return parseMarkdownBlocks(body, markdownFilePath);
 }
 
-export type { Block } from "./blocks";
+export type { Block } from './blocks';

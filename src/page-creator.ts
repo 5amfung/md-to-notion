@@ -1,15 +1,19 @@
-import path from "path";
-import { createHash } from "crypto";
-import { Client } from "@notionhq/client";
-import type { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
-import { toRelativePath } from "./scanner";
-import type { ScanResult } from "./scanner";
-import { loadSyncState, saveSyncState } from "./sync-state";
-import type { SyncState } from "./sync-state";
-import { parseMarkdown } from "./parser";
-import { buildNotionBlocks } from "./notion/blocks";
-import { createNotionClient, createPageWithBlocks, replacePageBlocks } from "./notion/client";
-import { uploadFile } from "./notion/upload";
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import type { Client } from '@notionhq/client';
+import type { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
+import { buildNotionBlocks } from './notion/blocks';
+import {
+  createNotionClient,
+  createPageWithBlocks,
+  replacePageBlocks,
+} from './notion/client';
+import { uploadFile } from './notion/upload';
+import { parseMarkdown } from './parser';
+import type { ScanResult } from './scanner';
+import { toRelativePath } from './scanner';
+import type { SyncState } from './sync-state';
+import { loadSyncState, saveSyncState } from './sync-state';
 
 export type ImportOptions = {
   dryRun?: boolean;
@@ -28,18 +32,18 @@ function log(message: string, verbose?: boolean) {
 async function computeHash(filePath: string): Promise<string> {
   const file = Bun.file(filePath);
   const buffer = Buffer.from(await file.arrayBuffer());
-  const hash = createHash("sha256");
+  const hash = createHash('sha256');
   hash.update(buffer);
-  return hash.digest("hex");
+  return hash.digest('hex');
 }
 
 function getRootKey(): string {
-  return ".";
+  return '.';
 }
 
 function getParentKey(relativeDir: string): string {
   const parent = path.dirname(relativeDir);
-  return parent === "." ? getRootKey() : parent;
+  return parent === '.' ? getRootKey() : parent;
 }
 
 async function ensureDirectoryPages(
@@ -50,7 +54,7 @@ async function ensureDirectoryPages(
   options: ImportOptions
 ): Promise<string> {
   const rootKey = getRootKey();
-  
+
   // If createRootPage is false, the root maps directly to destination
   if (!scan.createRootPage) {
     if (!state.directories[rootKey]) {
@@ -60,9 +64,14 @@ async function ensureDirectoryPages(
   } else if (!state.directories[rootKey]) {
     if (options.dryRun) {
       log(`[dry-run] create root dir page: ${scan.rootName}`, options.verbose);
-      state.directories[rootKey] = { notionPageId: "dry-run" };
+      state.directories[rootKey] = { notionPageId: 'dry-run' };
     } else {
-      const rootPageId = await createPageWithBlocks(notion, destinationPageId, scan.rootName, []);
+      const rootPageId = await createPageWithBlocks(
+        notion,
+        destinationPageId,
+        scan.rootName,
+        []
+      );
       state.directories[rootKey] = { notionPageId: rootPageId };
       await saveSyncState(state);
     }
@@ -70,7 +79,7 @@ async function ensureDirectoryPages(
 
   const sortedDirs = scan.directories
     .map((dir) => toRelativePath(scan.rootDir, dir))
-    .filter((rel) => rel && rel !== "." && rel !== rootKey)
+    .filter((rel) => rel && rel !== '.' && rel !== rootKey)
     .sort((a, b) => a.length - b.length);
 
   for (const relativeDir of sortedDirs) {
@@ -83,7 +92,7 @@ async function ensureDirectoryPages(
 
     if (options.dryRun) {
       log(`[dry-run] create dir page: ${relativeDir}`, options.verbose);
-      state.directories[relativeDir] = { notionPageId: "dry-run" };
+      state.directories[relativeDir] = { notionPageId: 'dry-run' };
       continue;
     }
 
@@ -104,11 +113,14 @@ async function buildBlocksForFile(
   const content = await Bun.file(filePath).text();
   const parsedBlocks = parseMarkdown(content, filePath);
   return buildNotionBlocks(parsedBlocks, {
-    uploadLocalImage: async (imagePath) => uploadFile(notion, imagePath, { verbose: options?.verbose }),
+    uploadLocalImage: async (imagePath) =>
+      uploadFile(notion, imagePath, { verbose: options?.verbose }),
     missingImagePlaceholder: (imagePath) => ({
-      type: "paragraph",
+      type: 'paragraph',
       paragraph: {
-        rich_text: [{ type: "text", text: { content: `[Missing image: ${imagePath}]` } }],
+        rich_text: [
+          { type: 'text', text: { content: `[Missing image: ${imagePath}]` } },
+        ],
       },
     }),
   });
@@ -120,7 +132,7 @@ export async function importMarkdown(
   options: ImportOptions
 ): Promise<void> {
   if (scan.isDirectory && scan.mdFiles.length === 0) {
-    log("No markdown files found. Nothing to import.", options.verbose);
+    log('No markdown files found. Nothing to import.', options.verbose);
     return;
   }
 
@@ -129,7 +141,13 @@ export async function importMarkdown(
 
   let rootPageId = destinationPageId;
   if (scan.isDirectory) {
-    rootPageId = await ensureDirectoryPages(notion, state, scan, destinationPageId, options);
+    rootPageId = await ensureDirectoryPages(
+      notion,
+      state,
+      scan,
+      destinationPageId,
+      options
+    );
   }
 
   for (const filePath of scan.mdFiles) {
@@ -138,16 +156,17 @@ export async function importMarkdown(
       : path.basename(filePath);
     const fileHash = await computeHash(filePath);
     const existing = state.files[relativePath];
-    const shouldUpdate = options.force || !existing || existing.contentHash !== fileHash;
+    const shouldUpdate =
+      options.force || !existing || existing.contentHash !== fileHash;
 
     if (!shouldUpdate) {
       log(`skip: ${relativePath}`, options.verbose);
       continue;
     }
 
-    const title = path.basename(filePath, ".md");
+    const title = path.basename(filePath, '.md');
     const fileDir = path.dirname(relativePath);
-    const parentKey = fileDir === "." ? getRootKey() : fileDir;
+    const parentKey = fileDir === '.' ? getRootKey() : fileDir;
     const parentPageId = scan.isDirectory
       ? state.directories[parentKey]?.notionPageId
       : rootPageId;
@@ -157,11 +176,16 @@ export async function importMarkdown(
     }
 
     if (options.dryRun) {
-      log(`[dry-run] ${existing ? "update" : "create"}: ${relativePath}`, options.verbose);
+      log(
+        `[dry-run] ${existing ? 'update' : 'create'}: ${relativePath}`,
+        options.verbose
+      );
       continue;
     }
 
-    const blocks = await buildBlocksForFile(notion, filePath, { verbose: options.verbose });
+    const blocks = await buildBlocksForFile(notion, filePath, {
+      verbose: options.verbose,
+    });
 
     let pageId = existing?.notionPageId;
     if (pageId) {

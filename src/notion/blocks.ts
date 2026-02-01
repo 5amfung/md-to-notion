@@ -1,6 +1,6 @@
-import type { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
-import type { Block, ImageSource } from "../parser/blocks";
-import type { InlineSegment } from "../parser/inline";
+import type { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
+import type { Block, ImageSource } from '../parser/blocks';
+import type { InlineSegment } from '../parser/inline';
 
 type RichText = Record<string, unknown>;
 type NotionBlock = Record<string, unknown>;
@@ -12,17 +12,18 @@ export type BuildOptions = {
 
 function toRichText(segments: InlineSegment[]): RichText[] {
   return segments.map((segment) => {
-    if (segment.type === "equation") {
-      return { type: "equation", equation: { expression: segment.text } };
+    if (segment.type === 'equation') {
+      return { type: 'equation', equation: { expression: segment.text } };
     }
     const annotations = segment.annotations || {};
     return {
-      type: "text",
+      type: 'text',
       text: {
         content: segment.text,
         link: segment.link ? { url: segment.link } : undefined,
       },
-      annotations: Object.keys(annotations).length > 0 ? annotations : undefined,
+      annotations:
+        Object.keys(annotations).length > 0 ? annotations : undefined,
     };
   });
 }
@@ -32,11 +33,11 @@ async function buildImageBlock(
   caption: InlineSegment[],
   options: BuildOptions
 ): Promise<NotionBlock> {
-  if (source.type === "external") {
+  if (source.type === 'external') {
     return {
-      type: "image",
+      type: 'image',
       image: {
-        type: "external",
+        type: 'external',
         external: { url: source.url },
         caption: toRichText(caption),
       },
@@ -50,9 +51,9 @@ async function buildImageBlock(
 
   const uploadId = await options.uploadLocalImage(source.path);
   return {
-    type: "image",
+    type: 'image',
     image: {
-      type: "file_upload",
+      type: 'file_upload',
       file_upload: { id: uploadId },
       caption: toRichText(caption),
     },
@@ -67,22 +68,22 @@ export async function buildNotionBlocks(
 
   for (const block of blocks) {
     switch (block.type) {
-      case "paragraph":
+      case 'paragraph':
         result.push({
-          type: "paragraph",
+          type: 'paragraph',
           paragraph: { rich_text: toRichText(block.richText) },
         });
         break;
-      case "heading_1":
-      case "heading_2":
-      case "heading_3":
+      case 'heading_1':
+      case 'heading_2':
+      case 'heading_3':
         result.push({
           type: block.type,
           [block.type]: { rich_text: toRichText(block.richText) },
         });
         break;
-      case "bulleted_list_item":
-      case "numbered_list_item": {
+      case 'bulleted_list_item':
+      case 'numbered_list_item': {
         const children = block.children
           ? await buildNotionBlocks(block.children, options)
           : undefined;
@@ -95,22 +96,22 @@ export async function buildNotionBlocks(
         });
         break;
       }
-      case "to_do":
+      case 'to_do':
         result.push({
-          type: "to_do",
+          type: 'to_do',
           to_do: {
             rich_text: toRichText(block.richText),
             checked: block.checked,
           },
         });
         break;
-      case "code":
+      case 'code':
         result.push({
-          type: "code",
+          type: 'code',
           code: {
             rich_text: [
               {
-                type: "text",
+                type: 'text',
                 text: { content: block.text },
               },
             ],
@@ -118,46 +119,48 @@ export async function buildNotionBlocks(
           },
         });
         break;
-      case "quote":
+      case 'quote':
         result.push({
-          type: "quote",
+          type: 'quote',
           quote: {
             rich_text: toRichText(block.richText),
-            color: "default",
+            color: 'default',
           },
         });
         break;
-      case "callout":
+      case 'callout':
         result.push({
-          type: "callout",
+          type: 'callout',
           callout: {
             rich_text: toRichText(block.richText),
-            icon: { type: "emoji", emoji: block.emoji },
+            icon: { type: 'emoji', emoji: block.emoji },
             color: block.color,
           },
         });
         break;
-      case "equation":
+      case 'equation':
         result.push({
-          type: "equation",
+          type: 'equation',
           equation: { expression: block.expression },
         });
         break;
-      case "divider":
-        result.push({ type: "divider", divider: {} });
+      case 'divider':
+        result.push({ type: 'divider', divider: {} });
         break;
-      case "image":
-        result.push(await buildImageBlock(block.source, block.caption, options));
+      case 'image':
+        result.push(
+          await buildImageBlock(block.source, block.caption, options)
+        );
         break;
-      case "table": {
+      case 'table': {
         const rows = block.rows.map((row) => ({
-          type: "table_row",
+          type: 'table_row',
           table_row: {
             cells: row.map((cell) => toRichText(cell)),
           },
         }));
         result.push({
-          type: "table",
+          type: 'table',
           table: {
             table_width: rows[0]?.table_row.cells.length || 1,
             has_column_header: block.hasColumnHeader,

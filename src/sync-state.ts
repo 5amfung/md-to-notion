@@ -1,4 +1,4 @@
-import path from "path";
+import path from 'node:path';
 
 export type SyncState = {
   destinationPageId: string;
@@ -19,7 +19,7 @@ export type SyncState = {
 };
 
 export function getStatePath(): string {
-  return path.join(process.cwd(), ".notion-sync.json");
+  return path.join(process.cwd(), '.notion-sync.json');
 }
 
 export async function loadSyncState(

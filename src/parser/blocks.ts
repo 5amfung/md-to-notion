@@ -1,57 +1,73 @@
-import { parseInline, replaceFootnoteRefs, resolveImagePath } from "./inline";
-import type { InlineSegment } from "./inline";
+import type { InlineSegment } from './inline';
+import { parseInline, replaceFootnoteRefs, resolveImagePath } from './inline';
 
 export type ImageSource =
-  | { type: "external"; url: string }
-  | { type: "local"; path: string };
+  | { type: 'external'; url: string }
+  | { type: 'local'; path: string };
 
 export type Block =
-  | { type: "paragraph"; richText: InlineSegment[] }
-  | { type: "heading_1" | "heading_2" | "heading_3"; richText: InlineSegment[] }
-  | { type: "bulleted_list_item" | "numbered_list_item"; richText: InlineSegment[]; children?: Block[] }
-  | { type: "to_do"; richText: InlineSegment[]; checked: boolean }
-  | { type: "code"; language: string; text: string }
-  | { type: "quote"; richText: InlineSegment[] }
-  | { type: "callout"; richText: InlineSegment[]; emoji: string; color: string }
-  | { type: "equation"; expression: string }
-  | { type: "divider" }
-  | { type: "image"; source: ImageSource; caption: InlineSegment[] }
-  | { type: "table"; rows: InlineSegment[][][]; hasColumnHeader: boolean; hasRowHeader: boolean };
+  | { type: 'paragraph'; richText: InlineSegment[] }
+  | { type: 'heading_1' | 'heading_2' | 'heading_3'; richText: InlineSegment[] }
+  | {
+      type: 'bulleted_list_item' | 'numbered_list_item';
+      richText: InlineSegment[];
+      children?: Block[];
+    }
+  | { type: 'to_do'; richText: InlineSegment[]; checked: boolean }
+  | { type: 'code'; language: string; text: string }
+  | { type: 'quote'; richText: InlineSegment[] }
+  | { type: 'callout'; richText: InlineSegment[]; emoji: string; color: string }
+  | { type: 'equation'; expression: string }
+  | { type: 'divider' }
+  | { type: 'image'; source: ImageSource; caption: InlineSegment[] }
+  | {
+      type: 'table';
+      rows: InlineSegment[][][];
+      hasColumnHeader: boolean;
+      hasRowHeader: boolean;
+    };
 
 type FootnoteMap = Map<string, string>;
 
 const CALLOUT_CONFIG: Record<string, { emoji: string; color: string }> = {
-  tip: { emoji: "💡", color: "yellow_background" },
-  note: { emoji: "📝", color: "gray_background" },
-  info: { emoji: "ℹ️", color: "blue_background" },
-  warning: { emoji: "⚠️", color: "orange_background" },
-  danger: { emoji: "🚫", color: "red_background" },
-  example: { emoji: "📋", color: "purple_background" },
-  quote: { emoji: "💬", color: "gray_background" },
-  recommended: { emoji: "👍", color: "green_background" },
-  abstract: { emoji: "📄", color: "blue_background" },
-  success: { emoji: "✅", color: "green_background" },
-  question: { emoji: "❓", color: "yellow_background" },
-  failure: { emoji: "❌", color: "red_background" },
-  bug: { emoji: "🐛", color: "red_background" },
+  tip: { emoji: '💡', color: 'yellow_background' },
+  note: { emoji: '📝', color: 'gray_background' },
+  info: { emoji: 'ℹ️', color: 'blue_background' },
+  warning: { emoji: '⚠️', color: 'orange_background' },
+  danger: { emoji: '🚫', color: 'red_background' },
+  example: { emoji: '📋', color: 'purple_background' },
+  quote: { emoji: '💬', color: 'gray_background' },
+  recommended: { emoji: '👍', color: 'green_background' },
+  abstract: { emoji: '📄', color: 'blue_background' },
+  success: { emoji: '✅', color: 'green_background' },
+  question: { emoji: '❓', color: 'yellow_background' },
+  failure: { emoji: '❌', color: 'red_background' },
+  bug: { emoji: '🐛', color: 'red_background' },
 };
 
-export function parseFootnotes(content: string): { body: string; footnotes: FootnoteMap } {
+export function parseFootnotes(content: string): {
+  body: string;
+  footnotes: FootnoteMap;
+} {
   const footnoteDefRegex = /^\[\^(\w+)\]:\s*(.+)$/gm;
   const footnotes = new Map<string, string>();
-  let match: RegExpExecArray | null;
-
-  while ((match = footnoteDefRegex.exec(content)) !== null) {
-    footnotes.set(match[1]!, match[2]!);
+  let match = footnoteDefRegex.exec(content);
+  while (match !== null) {
+    const key = match[1];
+    const value = match[2];
+    if (key !== undefined && value !== undefined) {
+      footnotes.set(key, value);
+    }
+    match = footnoteDefRegex.exec(content);
   }
 
-  const body = content.replace(footnoteDefRegex, "").trim();
+  const body = content.replace(footnoteDefRegex, '').trim();
   return { body, footnotes };
 }
 
 function isDivider(line: string): boolean {
   const trimmed = line.trim();
-  return trimmed === "---" || trimmed === "***";
+  return trimmed === '---' || trimmed === '***';
 }
 
 function isHeading(line: string): RegExpMatchArray | null {
@@ -63,7 +79,7 @@ function isCodeFence(line: string): RegExpMatchArray | null {
 }
 
 function isBlockMathStart(line: string): boolean {
-  return line.trim().startsWith("$$");
+  return line.trim().startsWith('$$');
 }
 
 function isCallout(line: string): RegExpMatchArray | null {
@@ -101,22 +117,24 @@ function parseImageLine(
   const trimmed = line.trim();
   let match = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
   if (match) {
-    const alt = match[1] ?? "";
-    const url = match[2]!;
+    const alt = match[1] ?? '';
+    const url = match[2];
+    if (url === undefined) return null;
     if (/^https?:\/\//i.test(url)) {
-      return { source: { type: "external", url }, caption: parseInline(alt) };
+      return { source: { type: 'external', url }, caption: parseInline(alt) };
     }
     return {
-      source: { type: "local", path: resolveImagePath(markdownFilePath, url) },
+      source: { type: 'local', path: resolveImagePath(markdownFilePath, url) },
       caption: parseInline(alt),
     };
   }
 
   match = trimmed.match(/^!\[\[([^\]]+)\]\]$/);
   if (match) {
-    const url = match[1]!;
+    const url = match[1];
+    if (url === undefined) return null;
     return {
-      source: { type: "local", path: resolveImagePath(markdownFilePath, url) },
+      source: { type: 'local', path: resolveImagePath(markdownFilePath, url) },
       caption: [],
     };
   }
@@ -124,14 +142,19 @@ function parseImageLine(
   return null;
 }
 
-function collectQuoteLines(lines: string[], startIndex: number): { text: string; nextIndex: number } {
+function collectQuoteLines(
+  lines: string[],
+  startIndex: number
+): { text: string; nextIndex: number } {
   const parts: string[] = [];
   let i = startIndex;
-  while (i < lines.length && isBlockquote(lines[i]!) && !isCallout(lines[i]!)) {
-    parts.push(lines[i]!.replace(/^>\s?/, ""));
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line === undefined || !isBlockquote(line) || isCallout(line)) break;
+    parts.push(line.replace(/^>\s?/, ''));
     i += 1;
   }
-  return { text: parts.join("\n"), nextIndex: i };
+  return { text: parts.join('\n'), nextIndex: i };
 }
 
 function parseList(
@@ -143,46 +166,59 @@ function parseList(
 
   let i = startIndex;
   while (i < lines.length) {
-    const line = lines[i]!;
+    const line = lines[i];
+    if (line === undefined) break;
     const taskMatch = isTaskItem(line);
     const bulletMatch = !taskMatch ? isBulletedItem(line) : null;
-    const numberMatch = !taskMatch && !bulletMatch ? isNumberedItem(line) : null;
+    const numberMatch =
+      !taskMatch && !bulletMatch ? isNumberedItem(line) : null;
 
     if (!taskMatch && !bulletMatch && !numberMatch) break;
 
-    const indent = (taskMatch?.[1] ?? bulletMatch?.[1] ?? numberMatch?.[1] ?? "").length;
+    const indent = (
+      taskMatch?.[1] ??
+      bulletMatch?.[1] ??
+      numberMatch?.[1] ??
+      ''
+    ).length;
     const normalizedIndent = Math.floor(indent / 2);
 
     let block: Block;
     if (taskMatch) {
+      const text = taskMatch[3] ?? '';
       block = {
-        type: "to_do",
-        richText: parseInline(taskMatch[3]!),
-        checked: taskMatch[2]!.toLowerCase() === "x",
+        type: 'to_do',
+        richText: parseInline(text),
+        checked: taskMatch[2]?.toLowerCase() === 'x',
       };
     } else if (numberMatch) {
+      const text = numberMatch[2] ?? '';
       block = {
-        type: "numbered_list_item",
-        richText: parseInline(numberMatch[2]!),
+        type: 'numbered_list_item',
+        richText: parseInline(text),
         children: [],
       };
     } else {
+      const text = bulletMatch?.[2] ?? '';
       block = {
-        type: "bulleted_list_item",
-        richText: parseInline(bulletMatch![2]!),
+        type: 'bulleted_list_item',
+        richText: parseInline(text),
         children: [],
       };
     }
 
-    while (stack.length > 0 && stack[stack.length - 1]!.indent >= normalizedIndent) {
+    while (
+      stack.length > 0 &&
+      stack[stack.length - 1]?.indent >= normalizedIndent
+    ) {
       stack.pop();
     }
 
     if (stack.length === 0) {
       blocks.push(block);
     } else {
-      const parent = stack[stack.length - 1]!.block;
-      if ("children" in parent) {
+      const parent = stack[stack.length - 1]?.block;
+      if ('children' in parent) {
         parent.children = parent.children || [];
         parent.children.push(block);
       }
@@ -203,29 +239,38 @@ function parseTable(
     return { block: null, nextIndex: startIndex };
   }
 
-  if (!isTableRow(lines[startIndex]!) || !isTableSeparator(lines[startIndex + 1]!)) {
+  const firstRow = lines[startIndex];
+  const separatorRow = lines[startIndex + 1];
+  if (
+    firstRow === undefined ||
+    !isTableRow(firstRow) ||
+    separatorRow === undefined ||
+    !isTableSeparator(separatorRow)
+  ) {
     return { block: null, nextIndex: startIndex };
   }
 
   const rows: InlineSegment[][][] = [];
   let i = startIndex;
-  while (i < lines.length && isTableRow(lines[i]!)) {
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line === undefined || !isTableRow(line)) break;
     if (i === startIndex + 1) {
       i += 1;
       continue;
     }
-    const cells = lines[i]!
-      .trim()
-      .replace(/^\|/, "")
-      .replace(/\|$/, "")
-      .split("|")
+    const cells = line
+      ?.trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
       .map((cell) => parseInline(cell.trim()));
     rows.push(cells);
     i += 1;
   }
 
   const block: Block = {
-    type: "table",
+    type: 'table',
     rows,
     hasColumnHeader: true,
     hasRowHeader: false,
@@ -234,98 +279,128 @@ function parseTable(
   return { block, nextIndex: i };
 }
 
-export function parseMarkdownBlocks(content: string, markdownFilePath: string): Block[] {
+export function parseMarkdownBlocks(
+  content: string,
+  markdownFilePath: string
+): Block[] {
   const { body, footnotes } = parseFootnotes(content);
   const normalizedBody = replaceFootnoteRefs(body);
-  const lines = normalizedBody.split("\n");
+  const lines = normalizedBody.split('\n');
   const blocks: Block[] = [];
   let i = 0;
 
   while (i < lines.length) {
-    const line = lines[i]!;
-    if (!line.trim()) {
+    const line = lines[i];
+    if (line === undefined || !line.trim()) {
       i += 1;
       continue;
     }
 
     const codeFence = isCodeFence(line);
     if (codeFence) {
-      const language = codeFence[1] || "plain text";
+      const language = codeFence[1] || 'plain text';
       const codeLines: string[] = [];
       i += 1;
-      while (i < lines.length && !lines[i]!.trim().startsWith("```")) {
-        codeLines.push(lines[i]!);
+      while (i < lines.length) {
+        const codeLine = lines[i];
+        if (codeLine === undefined || codeLine.trim().startsWith('```')) break;
+        codeLines.push(codeLine);
         i += 1;
       }
       i += 1;
-      blocks.push({ type: "code", language, text: codeLines.join("\n") });
+      blocks.push({ type: 'code', language, text: codeLines.join('\n') });
       continue;
     }
 
     if (isBlockMathStart(line)) {
       const trimmed = line.trim();
-      if (trimmed.startsWith("$$") && trimmed.endsWith("$$") && trimmed.length > 4) {
+      if (
+        trimmed.startsWith('$$') &&
+        trimmed.endsWith('$$') &&
+        trimmed.length > 4
+      ) {
         const expression = trimmed.slice(2, -2).trim();
-        blocks.push({ type: "equation", expression });
+        blocks.push({ type: 'equation', expression });
         i += 1;
         continue;
       }
       const mathLines: string[] = [];
       i += 1;
-      while (i < lines.length && !lines[i]!.trim().startsWith("$$")) {
-        mathLines.push(lines[i]!);
+      while (i < lines.length) {
+        const mathLine = lines[i];
+        if (mathLine === undefined || mathLine.trim().startsWith('$$')) break;
+        mathLines.push(mathLine);
         i += 1;
       }
       i += 1;
-      blocks.push({ type: "equation", expression: mathLines.join("\n") });
+      blocks.push({ type: 'equation', expression: mathLines.join('\n') });
       continue;
     }
 
     const calloutMatch = isCallout(line);
     if (calloutMatch) {
-      const calloutType = calloutMatch[1]!.toLowerCase();
+      const calloutType = calloutMatch[1]?.toLowerCase();
       const title = calloutMatch[2]?.trim();
-      const config = CALLOUT_CONFIG[calloutType] ?? CALLOUT_CONFIG.note!;
+      const config = (calloutType && CALLOUT_CONFIG[calloutType]) ??
+        CALLOUT_CONFIG.note ?? { emoji: '📝', color: 'gray_background' };
       const calloutLines: string[] = [];
       i += 1;
-      while (i < lines.length && isBlockquote(lines[i]!)) {
-        calloutLines.push(lines[i]!.replace(/^>\s?/, ""));
+      while (i < lines.length) {
+        const calloutLine = lines[i];
+        if (calloutLine === undefined || !isBlockquote(calloutLine)) break;
+        calloutLines.push(calloutLine.replace(/^>\s?/, ''));
         i += 1;
       }
       const richText: InlineSegment[] = [];
       if (title) {
-        richText.push({ type: "text", text: `${title}\n`, annotations: { bold: true } });
+        richText.push({
+          type: 'text',
+          text: `${title}\n`,
+          annotations: { bold: true },
+        });
       }
-      richText.push(...parseInline(calloutLines.join("\n")));
-      blocks.push({ type: "callout", richText, emoji: config.emoji, color: config.color });
+      richText.push(...parseInline(calloutLines.join('\n')));
+      blocks.push({
+        type: 'callout',
+        richText,
+        emoji: config.emoji,
+        color: config.color,
+      });
       continue;
     }
 
     if (isBlockquote(line)) {
       const { text, nextIndex } = collectQuoteLines(lines, i);
-      blocks.push({ type: "quote", richText: parseInline(text) });
+      blocks.push({ type: 'quote', richText: parseInline(text) });
       i = nextIndex;
       continue;
     }
 
     const headingMatch = isHeading(line);
     if (headingMatch) {
-      const level = headingMatch[1]!.length;
-      const headingType = `heading_${level}` as "heading_1" | "heading_2" | "heading_3";
-      blocks.push({ type: headingType, richText: parseInline(headingMatch[2]!) });
+      const level = headingMatch[1]?.length;
+      const headingType = `heading_${level}` as
+        | 'heading_1'
+        | 'heading_2'
+        | 'heading_3';
+      const headingText = headingMatch[2] ?? '';
+      blocks.push({
+        type: headingType,
+        richText: parseInline(headingText),
+      });
       i += 1;
       continue;
     }
 
     if (isDivider(line)) {
-      blocks.push({ type: "divider" });
+      blocks.push({ type: 'divider' });
       i += 1;
       continue;
     }
 
     const imageBlock = parseImageLine(line, markdownFilePath);
     if (imageBlock) {
-      blocks.push({ type: "image", ...imageBlock });
+      blocks.push({ type: 'image', ...imageBlock });
       i += 1;
       continue;
     }
@@ -345,8 +420,9 @@ export function parseMarkdownBlocks(content: string, markdownFilePath: string): 
     }
 
     const paragraphLines: string[] = [];
-    while (i < lines.length && lines[i]!.trim() !== "") {
-      const currentLine = lines[i]!;
+    while (i < lines.length && lines[i]?.trim() !== '') {
+      const currentLine = lines[i];
+      if (currentLine === undefined) break;
       if (
         isHeading(currentLine) ||
         isCodeFence(currentLine) ||
@@ -355,7 +431,7 @@ export function parseMarkdownBlocks(content: string, markdownFilePath: string): 
         isBlockquote(currentLine) ||
         isDivider(currentLine) ||
         parseImageLine(currentLine, markdownFilePath) ||
-        (isTableRow(currentLine) && isTableSeparator(lines[i + 1] ?? "")) ||
+        (isTableRow(currentLine) && isTableSeparator(lines[i + 1] ?? '')) ||
         isTaskItem(currentLine) ||
         isBulletedItem(currentLine) ||
         isNumberedItem(currentLine)
@@ -366,7 +442,10 @@ export function parseMarkdownBlocks(content: string, markdownFilePath: string): 
       i += 1;
     }
     if (paragraphLines.length > 0) {
-      blocks.push({ type: "paragraph", richText: parseInline(paragraphLines.join("\n")) });
+      blocks.push({
+        type: 'paragraph',
+        richText: parseInline(paragraphLines.join('\n')),
+      });
       continue;
     }
 
@@ -374,14 +453,14 @@ export function parseMarkdownBlocks(content: string, markdownFilePath: string): 
   }
 
   if (footnotes.size > 0) {
-    blocks.push({ type: "divider" });
+    blocks.push({ type: 'divider' });
     for (const [key, value] of footnotes.entries()) {
       const label = key.replace(/\d/g, (digit) => {
-        const superscripts = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
-        return superscripts[Number.parseInt(digit, 10)]!;
+        const superscripts = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
+        return superscripts[Number.parseInt(digit, 10)] ?? digit;
       });
       blocks.push({
-        type: "paragraph",
+        type: 'paragraph',
         richText: parseInline(`${label} ${value}`.trim()),
       });
     }

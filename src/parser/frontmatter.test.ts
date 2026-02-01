@@ -1,50 +1,50 @@
-import { test, expect, describe } from "bun:test";
-import { stripFrontmatter } from "./frontmatter";
+import { describe, expect, test } from 'bun:test';
+import { stripFrontmatter } from './frontmatter';
 
-describe("stripFrontmatter", () => {
-  test("valid YAML frontmatter extraction", () => {
-  const content = `---
+describe('stripFrontmatter', () => {
+  test('valid YAML frontmatter extraction', () => {
+    const content = `---
 title: Test Page
 author: John Doe
 ---
 
 This is the body content.`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({
-    title: "Test Page",
-    author: "John Doe",
-  });
-  expect(result.body).toBe("\nThis is the body content.");
+    expect(result.metadata).toEqual({
+      title: 'Test Page',
+      author: 'John Doe',
+    });
+    expect(result.body).toBe('\nThis is the body content.');
   });
 
-  test("content without frontmatter", () => {
-  const content = `This is plain markdown content.
+  test('content without frontmatter', () => {
+    const content = `This is plain markdown content.
 No frontmatter here.`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({});
-  expect(result.body).toBe(content);
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe(content);
   });
 
-  test("empty frontmatter", () => {
-  // Empty frontmatter with newline between delimiters
-  const content = `---
+  test('empty frontmatter', () => {
+    // Empty frontmatter with newline between delimiters
+    const content = `---
   
 ---
 
 Body content here.`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({});
-  expect(result.body).toBe("\nBody content here.");
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe('\nBody content here.');
   });
 
-  test("complex YAML with arrays", () => {
-  const content = `---
+  test('complex YAML with arrays', () => {
+    const content = `---
 tags:
   - tag1
   - tag2
@@ -56,17 +56,17 @@ categories:
 
 Body with arrays.`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({
-    tags: ["tag1", "tag2", "tag3"],
-    categories: ["cat1", "cat2"],
-  });
-  expect(result.body).toBe("\nBody with arrays.");
+    expect(result.metadata).toEqual({
+      tags: ['tag1', 'tag2', 'tag3'],
+      categories: ['cat1', 'cat2'],
+    });
+    expect(result.body).toBe('\nBody with arrays.');
   });
 
-  test("complex YAML with nested objects", () => {
-  const content = `---
+  test('complex YAML with nested objects', () => {
+    const content = `---
 author:
   name: John Doe
   email: john@example.com
@@ -77,23 +77,23 @@ author:
 
 Body with nested objects.`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({
-    author: {
-      name: "John Doe",
-      email: "john@example.com",
-      social: {
-        twitter: "@johndoe",
-        github: "johndoe",
+    expect(result.metadata).toEqual({
+      author: {
+        name: 'John Doe',
+        email: 'john@example.com',
+        social: {
+          twitter: '@johndoe',
+          github: 'johndoe',
+        },
       },
-    },
-  });
-  expect(result.body).toBe("\nBody with nested objects.");
+    });
+    expect(result.body).toBe('\nBody with nested objects.');
   });
 
-  test("YAML with numbers and booleans", () => {
-  const content = `---
+  test('YAML with numbers and booleans', () => {
+    const content = `---
 published: true
 views: 1234
 rating: 4.5
@@ -101,35 +101,35 @@ rating: 4.5
 
 Body with various types.`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({
-    published: true,
-    views: 1234,
-    rating: 4.5,
-  });
-  expect(result.body).toBe("\nBody with various types.");
+    expect(result.metadata).toEqual({
+      published: true,
+      views: 1234,
+      rating: 4.5,
+    });
+    expect(result.body).toBe('\nBody with various types.');
   });
 
-  test("YAML with dates", () => {
-  const content = `---
+  test('YAML with dates', () => {
+    const content = `---
 created: 2024-01-28T16:34
 updated: 2024-11-30T16:50
 ---
 
 Body with dates.`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({
-    created: "2024-01-28T16:34",
-    updated: "2024-11-30T16:50",
-  });
-  expect(result.body).toBe("\nBody with dates.");
+    expect(result.metadata).toEqual({
+      created: '2024-01-28T16:34',
+      updated: '2024-11-30T16:50',
+    });
+    expect(result.body).toBe('\nBody with dates.');
   });
 
-  test("multiline body content", () => {
-  const content = `---
+  test('multiline body content', () => {
+    const content = `---
 title: Test
 ---
 
@@ -139,9 +139,9 @@ Line 2
 
 Line 3`;
 
-  const result = stripFrontmatter(content);
+    const result = stripFrontmatter(content);
 
-  expect(result.metadata).toEqual({ title: "Test" });
-  expect(result.body).toBe("\nLine 1\n\nLine 2\n\nLine 3");
+    expect(result.metadata).toEqual({ title: 'Test' });
+    expect(result.body).toBe('\nLine 1\n\nLine 2\n\nLine 3');
   });
 });
