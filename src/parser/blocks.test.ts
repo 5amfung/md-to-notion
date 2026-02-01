@@ -283,6 +283,36 @@ This is line two.`;
     }
   });
 
+  test('image markdown reference becomes link paragraph', () => {
+    const content = '![Alt text](note.md)';
+    const result = parseMarkdownBlocks(content, '/test.md');
+    expect(result).toHaveLength(1);
+    expect(result[0]?.type).toBe('paragraph');
+    if (result[0]?.type === 'paragraph') {
+      const [segment] = result[0].richText;
+      expect(segment?.type).toBe('text');
+      if (segment?.type === 'text') {
+        expect(segment.text).toBe('note');
+        expect(segment.annotations).toEqual({ bold: true, color: 'blue' });
+      }
+    }
+  });
+
+  test('image markdown reference resolves relative paths', () => {
+    const content = '![Alt text](../notes/Ref.md)';
+    const result = parseMarkdownBlocks(content, '/root/dir/test.md');
+    expect(result).toHaveLength(1);
+    expect(result[0]?.type).toBe('paragraph');
+    if (result[0]?.type === 'paragraph') {
+      const [segment] = result[0].richText;
+      expect(segment?.type).toBe('text');
+      if (segment?.type === 'text') {
+        expect(segment.text).toBe('Ref');
+        expect(segment.annotations).toEqual({ bold: true, color: 'blue' });
+      }
+    }
+  });
+
   test('footnotes', () => {
     const content = `This is a reference¹.
 

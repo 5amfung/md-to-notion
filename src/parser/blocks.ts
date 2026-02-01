@@ -1,9 +1,14 @@
+import path from 'node:path';
 import type { InlineSegment } from './inline';
 import { parseInline, replaceFootnoteRefs, resolveImagePath } from './inline';
 
 export type ImageSource =
   | { type: 'external'; url: string }
   | { type: 'local'; path: string };
+
+type ParsedImageResult =
+  | { kind: 'image'; source: ImageSource; caption: InlineSegment[] }
+  | { kind: 'md_reference'; richText: InlineSegment[] };
 
 export type Block =
   | { type: 'paragraph'; richText: InlineSegment[] }
@@ -113,7 +118,7 @@ function isTableSeparator(line: string): boolean {
 function parseImageLine(
   line: string,
   markdownFilePath: string
-): { source: ImageSource; caption: InlineSegment[] } | null {
+): ParsedImageResult | null {
   const trimmed = line.trim();
   let match = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
   if (match) {
@@ -121,10 +126,23 @@ function parseImageLine(
     const url = match[2];
     if (url === undefined) return null;
     if (/^https?:\/\//i.test(url)) {
-      return { source: { type: 'external', url }, caption: parseInline(alt) };
+      return {
+        kind: 'image',
+        source: { type: 'external', url },
+        caption: parseInline(alt),
+      };
+    }
+    const resolvedPath = resolveImagePath(markdownFilePath, url);
+    if (path.extname(resolvedPath).toLowerCase() === '.md') {
+      const filename = path.basename(resolvedPath, '.md');
+      return {
+        kind: 'md_reference',
+        richText: parseInline(`[[${filename}]]`),
+      };
     }
     return {
-      source: { type: 'local', path: resolveImagePath(markdownFilePath, url) },
+      kind: 'image',
+      source: { type: 'local', path: resolvedPath },
       caption: parseInline(alt),
     };
   }
@@ -134,6 +152,7 @@ function parseImageLine(
     const url = match[1];
     if (url === undefined) return null;
     return {
+      kind: 'image',
       source: { type: 'local', path: resolveImagePath(markdownFilePath, url) },
       caption: [],
     };
@@ -400,7 +419,18 @@ export function parseMarkdownBlocks(
 
     const imageBlock = parseImageLine(line, markdownFilePath);
     if (imageBlock) {
-      blocks.push({ type: 'image', ...imageBlock });
+      if (imageBlock.kind === 'md_reference') {
+        blocks.push({
+          type: 'paragraph',
+          richText: imageBlock.richText,
+        });
+      } else {
+        blocks.push({
+          type: 'image',
+          source: imageBlock.source,
+          caption: imageBlock.caption,
+        });
+      }
       i += 1;
       continue;
     }
