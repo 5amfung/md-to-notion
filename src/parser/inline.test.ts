@@ -207,6 +207,21 @@ describe('parseInline', () => {
       { type: 'text', text: ' for details.' },
     ]);
   });
+
+  test('link with parentheses in URL', () => {
+    const result = parseInline(
+      'See [Link](path/file%20(name).md) for details.'
+    );
+    expect(result).toEqual([
+      { type: 'text', text: 'See ' },
+      {
+        type: 'wiki_link',
+        target: 'path/file%20(name).md',
+        display: 'Link',
+      },
+      { type: 'text', text: ' for details.' },
+    ]);
+  });
 });
 
 describe('replaceFootnoteRefs', () => {

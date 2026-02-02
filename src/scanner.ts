@@ -11,21 +11,41 @@ export type ScanResult = {
   createRootPage: boolean; // Whether to create a wrapper page for the root
 };
 
+const SCAN_PROGRESS_INTERVAL = 100;
+
+function log(message: string, verbose?: boolean) {
+  if (verbose) {
+    console.log(message);
+  }
+}
+
+function logProgress(count: number, verbose?: boolean) {
+  if (verbose && count % SCAN_PROGRESS_INTERVAL === 0) {
+    console.log(`Found ${count} markdown files so far...`);
+  }
+}
+
 async function collectMarkdownFiles(
   dir: string,
-  files: string[]
+  files: string[],
+  options?: { verbose?: boolean; progress?: { mdFiles: number } }
 ): Promise<void> {
+  log(`Scanning directory: ${dir}`, options?.verbose);
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      await collectMarkdownFiles(fullPath, files);
+      await collectMarkdownFiles(fullPath, files, options);
       continue;
     }
     if (!entry.isFile()) continue;
     if (entry.name.endsWith('.canvas')) continue;
     if (entry.name.endsWith('.md')) {
       files.push(fullPath);
+      if (options?.progress) {
+        options.progress.mdFiles += 1;
+        logProgress(options.progress.mdFiles, options.verbose);
+      }
     }
   }
 }
@@ -45,13 +65,18 @@ function deriveDirectories(rootDir: string, mdFiles: string[]): string[] {
   return Array.from(dirSet).sort((a, b) => a.length - b.length);
 }
 
-export async function scanInput(inputPath: string): Promise<ScanResult> {
+export async function scanInput(
+  inputPath: string,
+  verbose = false
+): Promise<ScanResult> {
   const resolved = path.resolve(inputPath);
   const stats = await stat(resolved);
   if (stats.isFile()) {
     if (!resolved.endsWith('.md')) {
       throw new Error(`Input file must be .md: ${resolved}`);
     }
+    log(`Scanning file: ${resolved}`, verbose);
+    log('Scan complete: 1 markdown files.', verbose);
     return {
       inputPath: resolved,
       isDirectory: false,
@@ -68,9 +93,14 @@ export async function scanInput(inputPath: string): Promise<ScanResult> {
   }
 
   const mdFiles: string[] = [];
-  await collectMarkdownFiles(resolved, mdFiles);
+  const progress = { mdFiles: 0 };
+  await collectMarkdownFiles(resolved, mdFiles, { verbose, progress });
 
   const directories = deriveDirectories(resolved, mdFiles);
+  log(
+    `Scan complete: ${mdFiles.length} markdown files across ${directories.length} directories.`,
+    verbose
+  );
   return {
     inputPath: resolved,
     isDirectory: true,
@@ -83,7 +113,8 @@ export async function scanInput(inputPath: string): Promise<ScanResult> {
 }
 
 export async function scanMultipleInputs(
-  inputPaths: string[]
+  inputPaths: string[],
+  verbose = false
 ): Promise<ScanResult> {
   if (inputPaths.length === 0) {
     throw new Error('No input paths provided');
@@ -92,7 +123,7 @@ export async function scanMultipleInputs(
   if (inputPaths.length === 1) {
     const single = inputPaths[0];
     if (single === undefined) throw new Error('No input paths provided');
-    return scanInput(single);
+    return scanInput(single, verbose);
   }
 
   // Multiple inputs: find common parent directory
@@ -116,6 +147,7 @@ export async function scanMultipleInputs(
 
   const mdFiles: string[] = [];
   const subDirs: string[] = [];
+  const progress = { mdFiles: 0 };
 
   for (const resolved of resolvedPaths) {
     try {
@@ -123,10 +155,12 @@ export async function scanMultipleInputs(
       if (stats.isFile()) {
         if (resolved.endsWith('.md')) {
           mdFiles.push(resolved);
+          progress.mdFiles += 1;
+          logProgress(progress.mdFiles, verbose);
         }
       } else if (stats.isDirectory()) {
         subDirs.push(resolved);
-        await collectMarkdownFiles(resolved, mdFiles);
+        await collectMarkdownFiles(resolved, mdFiles, { verbose, progress });
       }
     } catch {
       // Skip paths that don't exist
@@ -142,6 +176,10 @@ export async function scanMultipleInputs(
     )
   );
 
+  log(
+    `Scan complete: ${mdFiles.length} markdown files across ${relevantDirs.length} directories.`,
+    verbose
+  );
   return {
     inputPath: commonParent,
     isDirectory: true,

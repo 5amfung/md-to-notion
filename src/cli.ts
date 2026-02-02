@@ -57,8 +57,8 @@ export async function run(): Promise<void> {
     const singlePath = inputPaths[0];
     const scan =
       inputPaths.length === 1 && singlePath !== undefined
-        ? await scanInput(singlePath)
-        : await scanMultipleInputs(inputPaths);
+        ? await scanInput(singlePath, options.verbose)
+        : await scanMultipleInputs(inputPaths, options.verbose);
     await importMarkdown(scan, pageId, options);
     if (options.verbose) {
       console.log('Import complete.');

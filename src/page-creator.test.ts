@@ -427,6 +427,70 @@ describe('importMarkdown', () => {
     );
   });
 
+  test('resolves markdown links with subdirectories relative to current file', async () => {
+    const subdirA = join(testDir, 'A');
+    const subdirAB = join(subdirA, 'B');
+    const subdirABC = join(subdirAB, 'C');
+    await mkdir(subdirABC, { recursive: true });
+    const targetPath = join(subdirABC, 'Target.md');
+    const currentPath = join(subdirAB, 'Current.md');
+    await writeFile(targetPath, '# Target');
+    await writeFile(currentPath, 'See [Target](C/Target.md)');
+
+    const scan: ScanResult = {
+      inputPath: testDir,
+      isDirectory: true,
+      rootDir: testDir,
+      rootName: 'test-dir',
+      mdFiles: [targetPath, currentPath],
+      directories: [subdirA, subdirAB, subdirABC],
+      createRootPage: false,
+    };
+
+    const notion = {
+      pages: {
+        create: mock(
+          async (payload: {
+            properties?: {
+              title?: { title?: { text?: { content?: string } }[] };
+            };
+          }) => {
+            const title =
+              payload.properties?.title?.title?.[0]?.text?.content ?? 'unknown';
+            return { id: `page-${String(title).replace(/\s+/g, '-')}` };
+          }
+        ),
+      },
+      blocks: {
+        children: {
+          append: mock(async () => ({})),
+          list: mock(async () => ({ results: [], has_more: false })),
+        },
+        delete: mock(async () => ({})),
+      },
+      fileUploads: {
+        create: mock(async () => ({ id: 'upload-id' })),
+        send: mock(async () => ({})),
+      },
+    } as unknown as Client;
+
+    await importMarkdown(scan, 'dest-page-id', {
+      notionClient: notion,
+      verbose: true,
+    });
+
+    const appendMock = notion.blocks.children.append as ReturnType<typeof mock>;
+    const currentAppendCall = appendMock.mock.calls.find(
+      ([args]) => args.block_id === 'page-Current'
+    );
+    expect(currentAppendCall).toBeDefined();
+    const currentBlocks = currentAppendCall?.[0].children ?? [];
+    expect(currentBlocks[0].paragraph.rich_text[1].type).toBe('mention');
+    expect(currentBlocks[0].paragraph.rich_text[1].mention.page.id).toBe(
+      'page-Target'
+    );
+  });
+
   test('skip logs when verbose', async () => {
     const filePath = join(testDir, 'test.md');
     await writeFile(filePath, '# Content');
@@ -461,6 +525,34 @@ describe('importMarkdown', () => {
         notionClient: createMockNotionClient(),
       });
       expect(logSpy).toHaveBeenCalledWith('skip: test.md');
+    } finally {
+      console.log = orig;
+    }
+  });
+
+  test('first pass logs placeholder creation when verbose', async () => {
+    const filePath = join(testDir, 'test.md');
+    await writeFile(filePath, '# Content');
+
+    const scan: ScanResult = {
+      inputPath: filePath,
+      isDirectory: false,
+      rootDir: testDir,
+      rootName: 'test',
+      mdFiles: [filePath],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const logSpy = mock(() => {});
+    const orig = console.log;
+    console.log = logSpy as typeof console.log;
+    try {
+      await importMarkdown(scan, 'dest-page-id', {
+        verbose: true,
+        notionClient: createMockNotionClient(),
+      });
+      expect(logSpy).toHaveBeenCalledWith('create placeholder: test.md');
     } finally {
       console.log = orig;
     }

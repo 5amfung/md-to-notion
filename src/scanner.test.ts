@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -103,6 +103,23 @@ describe('scanInput', () => {
 
     expect(result.mdFiles.length).toBe(1);
     expect(result.mdFiles[0]).toContain('file with spaces.md');
+  });
+
+  test('verbose logs scan summary for directory', async () => {
+    await writeFile(join(testDir, 'file.md'), '# Test');
+
+    const logSpy = mock(() => {});
+    const original = console.log;
+    console.log = logSpy as typeof console.log;
+    try {
+      await scanInput(testDir, true);
+      expect(logSpy).toHaveBeenCalledWith(`Scanning directory: ${testDir}`);
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Scan complete:')
+      );
+    } finally {
+      console.log = original;
+    }
   });
 });
 
@@ -215,6 +232,27 @@ describe('scanMultipleInputs', () => {
 
     expect(result.mdFiles).not.toContain(syncFile);
     expect(result.mdFiles).toContain(join(dir1, 'file1.md'));
+  });
+
+  test('verbose logs scan summary for multiple inputs', async () => {
+    const dir1 = join(testDir, 'dir1');
+    const dir2 = join(testDir, 'dir2');
+    await mkdir(dir1);
+    await mkdir(dir2);
+    await writeFile(join(dir1, 'file1.md'), '# File 1');
+    await writeFile(join(dir2, 'file2.md'), '# File 2');
+
+    const logSpy = mock(() => {});
+    const original = console.log;
+    console.log = logSpy as typeof console.log;
+    try {
+      await scanMultipleInputs([dir1, dir2], true);
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Scan complete:')
+      );
+    } finally {
+      console.log = original;
+    }
   });
 });
 

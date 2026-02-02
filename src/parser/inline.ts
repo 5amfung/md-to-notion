@@ -72,7 +72,7 @@ export function parseInline(text: string): InlineSegment[] {
       },
     },
     {
-      regex: /\[([^\]]+)\]\(([^)]+)\)/,
+      regex: /\[([^\]]+)\]\(([^()]*(?:\([^()]*\)[^()]*)*)\)/,
       handler: (match) => {
         const label = match[1] ?? '';
         const url = match[2] ?? '';

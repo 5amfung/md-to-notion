@@ -62,16 +62,15 @@ function resolveWikiLinkTarget(
 
   const currentRelativePath = toRelativePath(scan.rootDir, currentFilePath);
   const currentDir = path.dirname(currentRelativePath);
-  const hasPathSeparator = /[\\/]/.test(normalizedTarget);
-  const isExplicitRelative =
-    normalizedTarget.startsWith('./') || normalizedTarget.startsWith('../');
+  const isRootRelative = normalizedTarget.startsWith('/');
+  const normalizedRelative = isRootRelative
+    ? normalizedTarget.slice(1)
+    : normalizedTarget;
 
-  const targetWithExtension = `${normalizedTarget}.md`;
-  const candidateRelative = isExplicitRelative
-    ? path.normalize(path.join(currentDir, targetWithExtension))
-    : hasPathSeparator
-      ? path.normalize(targetWithExtension)
-      : path.normalize(path.join(currentDir, targetWithExtension));
+  const targetWithExtension = `${normalizedRelative}.md`;
+  const candidateRelative = isRootRelative
+    ? path.normalize(targetWithExtension)
+    : path.normalize(path.join(currentDir, targetWithExtension));
 
   return state.files[candidateRelative]?.notionPageId ?? null;
 }
@@ -206,6 +205,7 @@ export async function importMarkdown(
       continue;
     }
 
+    log(`create placeholder: ${relativePath}`, options.verbose);
     const pageId = await createPageWithBlocks(notion, parentPageId, title, []);
     state.files[relativePath] = {
       notionPageId: pageId,
