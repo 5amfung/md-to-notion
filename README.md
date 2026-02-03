@@ -22,20 +22,15 @@ This enables incremental syncs and failure recovery.
 
 ## Quick Start
 
-The easiest way to use `md-to-notion` is via `npx` or `bunx` - no installation required!
+The easiest way to use `md-to-notion` is via `bunx` - no installation required!
 
 ```bash
-npx @samfung/md-to-notion
 bunx @samfung/md-to-notion
-pnpm dlx @samfung@md-to-notion
-yarn dlx @samfung@md-to-notion
 ```
 
 ### Prerequisites
 
-- Node.js (for `npx`), [Bun](https://bun.sh) (for `bunx`), or a package
-manager such as [pnpm](https://pnpm.io/) (for `pnpm dlx`) or [yarn](https://yarnpkg.com/)
-(for `yarn dlx`)
+- [Bun](https://bun.sh) (for `bunx`)
 - Notion API key
 
 ### Configuration
@@ -52,23 +47,20 @@ export NOTION_API_KEY=your_api_key_here
 ### Usage
 
 ```bash
-# Using npx (Node.js)
-npx md-to-notion ./doc <destination_page_id>
-
 # Using bunx (Bun)
 bunx md-to-notion ./doc <destination_page_id>
 
 # Import directory contents directly under destination (no wrapper page)
-npx md-to-notion ./doc/* <destination_page_id>
+bunx md-to-notion ./doc/* <destination_page_id>
 
 # Import a single file
-npx md-to-notion ./doc/file.md <destination_page_id>
+bunx md-to-notion ./doc/file.md <destination_page_id>
 
 # Import multiple specific paths
-npx md-to-notion ./doc/foo ./doc/bar ./doc/readme.md <destination_page_id>
+bunx md-to-notion ./doc/foo ./doc/bar ./doc/readme.md <destination_page_id>
 
 # With options
-npx md-to-notion ./doc <destination_page_id> --verbose --dry-run
+bunx md-to-notion ./doc <destination_page_id> --verbose --dry-run
 ```
 
 ### Single Directory vs Glob
@@ -134,11 +126,4 @@ bun run src/cli.ts ./doc/foo ./doc/bar ./doc/readme.md <destination_page_id>
 
 # With options
 bun run src/cli.ts ./doc <destination_page_id> --verbose --dry-run
-```
-
-### Publish to NPM
-
-```bash
-# Build and publish to npm
-bun run release
 ```
