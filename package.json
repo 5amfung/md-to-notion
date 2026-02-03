@@ -1,11 +1,11 @@
 {
   "name": "@samfung/md-to-notion",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Import markdown files to Notion, with support for Obsidian syntax",
   "author": "Sam Fung",
   "repository": {
     "type": "git",
-    "url": "https://github.com/samfung/md-to-notion.git"
+    "url": "git+https://github.com/5amfung/md-to-notion.git"
   },
   "keywords": [
     "notion",
@@ -18,20 +18,16 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "md-to-notion": "./dist/cli.js"
+    "md-to-notion": "dist/cli.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "bun build ./src/cli.ts --outdir ./dist --target node && node -e \"const fs=require('fs');const f='dist/cli.js';const c=fs.readFileSync(f,'utf8');fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c.replace(/^#!.*\\n/,''))\"",
+    "build": "bun build ./src/cli.ts --outdir ./dist --target bun",
     "start": "bun run src/cli.ts",
-    "test": "bun test",
-    "test:cov": "bun test --coverage",
-    "lint": "biome lint",
-    "format": "biome format --write",
-    "prepublishOnly": "bun run build",
-    "release": "bun publish --access public --dry-run"
+    "coverage": "bun test --coverage",
+    "check": "biome check --fix"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.13",
