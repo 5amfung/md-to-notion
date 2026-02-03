@@ -1,7 +1,19 @@
 {
-  "name": "md-to-notion",
+  "name": "@samfung/md-to-notion",
   "version": "0.1.0",
   "description": "Import markdown files to Notion, with support for Obsidian syntax",
+  "author": "Sam Fung",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samfung/md-to-notion.git"
+  },
+  "keywords": [
+    "notion",
+    "markdown",
+    "obsidian",
+    "import"
+  ],
+  "license": "MIT",
   "module": "index.ts",
   "type": "module",
   "main": "dist/index.js",
@@ -18,15 +30,9 @@
     "test:cov": "bun test --coverage",
     "lint": "biome lint",
     "format": "biome format --write",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "release": "bun publish --access public --dry-run"
   },
-  "keywords": [
-    "notion",
-    "markdown",
-    "obsidian",
-    "import"
-  ],
-  "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "2.3.13",
     "@types/bun": "latest",
