@@ -1,7 +1,7 @@
 name: Release
 on:
   workflow_run:
-    workflows: ["Test"] # Test must run and succeed
+    workflows: ["Test", "CodeQL Advanced"] # Depends on these workflows
     types:
       - completed
     branches:
