@@ -322,7 +322,7 @@ describe('run', () => {
     await run();
 
     expect(scanInputSpy).toHaveBeenCalledWith('file.md', true);
-    expect(consoleLogSpy).toHaveBeenCalledWith('Import complete.');
+    expect(consoleLogSpy).toHaveBeenCalledWith('✅ Import complete.');
 
     scanInputSpy.mockRestore();
     importMarkdownSpy.mockRestore();
