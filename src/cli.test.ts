@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test';
-import { parseArgs } from './cli';
+import { beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { parseArgs, run } from './cli';
+import type { ScanResult } from './scanner';
 
 describe('parseArgs', () => {
   test('valid args with path and page ID', () => {
@@ -104,6 +105,20 @@ describe('parseArgs', () => {
 });
 
 describe('run', () => {
+  let originalArgv: string[];
+  let originalEnv: NodeJS.ProcessEnv;
+  let consoleErrorSpy: ReturnType<typeof spyOn>;
+  let processExitSpy: ReturnType<typeof spyOn>;
+
+  beforeEach(() => {
+    originalArgv = process.argv;
+    originalEnv = process.env;
+    consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+    processExitSpy = spyOn(process, 'exit').mockImplementation(
+      (() => {}) as never
+    );
+  });
+
   test('executes flow via subprocess (dry-run)', async () => {
     const { mkdtemp, rm, writeFile } = await import('node:fs/promises');
     const { join } = await import('node:path');
@@ -193,5 +208,296 @@ describe('run', () => {
       await rm(dir, { recursive: true, force: true }).catch(() => {});
       throw e;
     }
+  });
+
+  test('unit: single path with scanInput', async () => {
+    process.argv = ['bun', 'cli.ts', 'file.md', 'page-123'];
+    process.env.NOTION_API_KEY = 'test-key';
+
+    const mockScanResult: ScanResult = {
+      inputPath: 'file.md',
+      isDirectory: false,
+      rootDir: '.',
+      rootName: 'file',
+      mdFiles: ['file.md'],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const scanner = await import('./scanner');
+    const pageCreator = await import('./page-creator');
+
+    const scanInputSpy = spyOn(scanner, 'scanInput').mockResolvedValue(
+      mockScanResult
+    );
+    const importMarkdownSpy = spyOn(
+      pageCreator,
+      'importMarkdown'
+    ).mockResolvedValue();
+
+    await run();
+
+    expect(scanInputSpy).toHaveBeenCalledWith('file.md', false);
+    expect(importMarkdownSpy).toHaveBeenCalledWith(mockScanResult, 'page-123', {
+      force: false,
+      dryRun: false,
+      verbose: false,
+    });
+    expect(processExitSpy).not.toHaveBeenCalled();
+
+    scanInputSpy.mockRestore();
+    importMarkdownSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: multiple paths with scanMultipleInputs', async () => {
+    process.argv = ['bun', 'cli.ts', 'dir1', 'dir2', 'page-456'];
+    process.env.NOTION_API_KEY = 'test-key';
+
+    const mockScanResult: ScanResult = {
+      inputPath: '.',
+      isDirectory: true,
+      rootDir: '.',
+      rootName: 'test',
+      mdFiles: ['dir1/a.md', 'dir2/b.md'],
+      directories: ['dir1', 'dir2'],
+      createRootPage: true,
+    };
+
+    const scanner = await import('./scanner');
+    const pageCreator = await import('./page-creator');
+
+    const scanMultipleSpy = spyOn(
+      scanner,
+      'scanMultipleInputs'
+    ).mockResolvedValue(mockScanResult);
+    const importMarkdownSpy = spyOn(
+      pageCreator,
+      'importMarkdown'
+    ).mockResolvedValue();
+
+    await run();
+
+    expect(scanMultipleSpy).toHaveBeenCalledWith(['dir1', 'dir2'], false);
+    expect(importMarkdownSpy).toHaveBeenCalledWith(mockScanResult, 'page-456', {
+      force: false,
+      dryRun: false,
+      verbose: false,
+    });
+    expect(processExitSpy).not.toHaveBeenCalled();
+
+    scanMultipleSpy.mockRestore();
+    importMarkdownSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: verbose mode logs completion', async () => {
+    process.argv = ['bun', 'cli.ts', 'file.md', 'page-789', '--verbose'];
+    process.env.NOTION_API_KEY = 'test-key';
+
+    const mockScanResult: ScanResult = {
+      inputPath: 'file.md',
+      isDirectory: false,
+      rootDir: '.',
+      rootName: 'file',
+      mdFiles: ['file.md'],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const scanner = await import('./scanner');
+    const pageCreator = await import('./page-creator');
+
+    const scanInputSpy = spyOn(scanner, 'scanInput').mockResolvedValue(
+      mockScanResult
+    );
+    const importMarkdownSpy = spyOn(
+      pageCreator,
+      'importMarkdown'
+    ).mockResolvedValue();
+    const consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    await run();
+
+    expect(scanInputSpy).toHaveBeenCalledWith('file.md', true);
+    expect(consoleLogSpy).toHaveBeenCalledWith('Import complete.');
+
+    scanInputSpy.mockRestore();
+    importMarkdownSpy.mockRestore();
+    consoleLogSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: missing NOTION_API_KEY errors and exits', async () => {
+    process.argv = ['bun', 'cli.ts', 'file.md', 'page-123'];
+    process.env.NOTION_API_KEY = '';
+
+    await run();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Missing NOTION_API_KEY environment variable.'
+    );
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: parseArgs error is caught and exits', async () => {
+    process.argv = ['bun', 'cli.ts']; // Missing required args
+    process.env.NOTION_API_KEY = 'test-key';
+
+    await run();
+
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: importMarkdown error is caught and exits', async () => {
+    process.argv = ['bun', 'cli.ts', 'file.md', 'page-123'];
+    process.env.NOTION_API_KEY = 'test-key';
+
+    const mockScanResult: ScanResult = {
+      inputPath: 'file.md',
+      isDirectory: false,
+      rootDir: '.',
+      rootName: 'file',
+      mdFiles: ['file.md'],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const scanner = await import('./scanner');
+    const pageCreator = await import('./page-creator');
+
+    const scanInputSpy = spyOn(scanner, 'scanInput').mockResolvedValue(
+      mockScanResult
+    );
+    const importMarkdownSpy = spyOn(
+      pageCreator,
+      'importMarkdown'
+    ).mockRejectedValue(new Error('Import failed'));
+
+    await run();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Import failed');
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+
+    scanInputSpy.mockRestore();
+    importMarkdownSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: non-Error exception is handled', async () => {
+    process.argv = ['bun', 'cli.ts', 'file.md', 'page-123'];
+    process.env.NOTION_API_KEY = 'test-key';
+
+    const mockScanResult: ScanResult = {
+      inputPath: 'file.md',
+      isDirectory: false,
+      rootDir: '.',
+      rootName: 'file',
+      mdFiles: ['file.md'],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const scanner = await import('./scanner');
+    const pageCreator = await import('./page-creator');
+
+    const scanInputSpy = spyOn(scanner, 'scanInput').mockResolvedValue(
+      mockScanResult
+    );
+    const importMarkdownSpy = spyOn(
+      pageCreator,
+      'importMarkdown'
+    ).mockRejectedValue('string error');
+
+    await run();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('string error');
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+
+    scanInputSpy.mockRestore();
+    importMarkdownSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: scanInput error is caught and exits', async () => {
+    process.argv = ['bun', 'cli.ts', 'file.md', 'page-123'];
+    process.env.NOTION_API_KEY = 'test-key';
+
+    const scanner = await import('./scanner');
+
+    const scanInputSpy = spyOn(scanner, 'scanInput').mockRejectedValue(
+      new Error('Scan failed')
+    );
+
+    await run();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Scan failed');
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+
+    scanInputSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: scanMultipleInputs error is caught and exits', async () => {
+    process.argv = ['bun', 'cli.ts', 'dir1', 'dir2', 'page-123'];
+    process.env.NOTION_API_KEY = 'test-key';
+
+    const scanner = await import('./scanner');
+
+    const scanMultipleSpy = spyOn(
+      scanner,
+      'scanMultipleInputs'
+    ).mockRejectedValue(new Error('Scan multiple failed'));
+
+    await run();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Scan multiple failed');
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+
+    scanMultipleSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
+  });
+
+  test('unit: undefined NOTION_API_KEY errors and exits', async () => {
+    process.argv = ['bun', 'cli.ts', 'file.md', 'page-123'];
+    delete process.env.NOTION_API_KEY;
+
+    await run();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Missing NOTION_API_KEY environment variable.'
+    );
+    expect(processExitSpy).toHaveBeenCalledWith(1);
+
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+    process.argv = originalArgv;
+    process.env = originalEnv;
   });
 });

@@ -9,11 +9,9 @@ export function stripFrontmatter(content: string): {
     return { metadata: {}, body: content };
   }
 
-  const yamlContent = match[1];
-  const bodyContent = match[2];
-  if (yamlContent === undefined || bodyContent === undefined) {
-    return { metadata: {}, body: content };
-  }
+  // Regex guarantees these groups exist when there's a match
+  const yamlContent = match[1] ?? '';
+  const bodyContent = match[2] ?? '';
 
   try {
     const metadata = (yaml.load(yamlContent) as Record<string, unknown>) || {};

@@ -167,4 +167,118 @@ Body content.`;
     // If YAML is invalid, it should still attempt to parse or return default
     expect(result.body).toBeDefined();
   });
+
+  test('malformed frontmatter with missing closing delimiter', () => {
+    const content = `---
+title: Test
+This is missing the closing delimiter`;
+
+    const result = stripFrontmatter(content);
+
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe(content);
+  });
+
+  test('frontmatter-like content in middle of document', () => {
+    const content = `Some content here
+
+---
+not: frontmatter
+---
+
+More content`;
+
+    const result = stripFrontmatter(content);
+
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe(content);
+  });
+
+  test('frontmatter with Windows line endings (CRLF)', () => {
+    const content = '---\r\ntitle: Test\r\n---\r\nBody content';
+
+    const result = stripFrontmatter(content);
+
+    // Should not match due to \r\n line endings
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe(content);
+  });
+
+  test('empty string input', () => {
+    const result = stripFrontmatter('');
+
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe('');
+  });
+
+  test('only opening delimiter', () => {
+    const content = `---
+title: Test`;
+
+    const result = stripFrontmatter(content);
+
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe(content);
+  });
+
+  test('YAML that loads to null', () => {
+    // YAML that explicitly represents null
+    const content = `---
+~
+---
+
+Body content.`;
+
+    const result = stripFrontmatter(content);
+
+    // yaml.load('~') returns null, should use || {} fallback
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe('\nBody content.');
+  });
+
+  test('extra delimiters in body', () => {
+    const content = `---
+title: Test
+---
+
+Body with --- in it
+And more content`;
+
+    const result = stripFrontmatter(content);
+
+    expect(result.metadata).toEqual({ title: 'Test' });
+    expect(result.body).toBe('\nBody with --- in it\nAnd more content');
+  });
+
+  test('frontmatter with special YAML characters', () => {
+    const content = `---
+title: "Test: With Colon"
+description: "Test | With Pipe"
+quote: 'Single quotes'
+---
+
+Body content.`;
+
+    const result = stripFrontmatter(content);
+
+    expect(result.metadata).toEqual({
+      title: 'Test: With Colon',
+      description: 'Test | With Pipe',
+      quote: 'Single quotes',
+    });
+    expect(result.body).toBe('\nBody content.');
+  });
+
+  test('invalid YAML with completely broken syntax', () => {
+    const content = `---
+{this is: [not, valid: yaml}}
+---
+
+Body content.`;
+
+    const result = stripFrontmatter(content);
+
+    expect(result.metadata).toEqual({});
+    expect(result.body).toBe('\nBody content.');
+  });
 });
