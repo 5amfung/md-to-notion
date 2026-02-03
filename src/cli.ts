@@ -61,7 +61,7 @@ export async function run(): Promise<void> {
         : await scanMultipleInputs(inputPaths, options.verbose);
     await importMarkdown(scan, pageId, options);
     if (options.verbose) {
-      console.log('Import complete.');
+      console.log('✅ Import complete.');
     }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
