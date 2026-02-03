@@ -1,7 +1,7 @@
 name: Release
 on:
   workflow_run:
-    workflows: ["Test", "CodeQL Advanced"] # Depends on these workflows
+    workflows: ["CI"] # Depends on this workflow
     types:
       - completed
     branches:
