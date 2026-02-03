@@ -582,4 +582,154 @@ describe('importMarkdown', () => {
     expect(state.files['doc.md']?.notionPageId).toBe('new-page-id');
     expect(notion.pages.create).toHaveBeenCalled();
   });
+
+  test('throws error when parent page is missing for file in first pass', async () => {
+    const subdir = join(testDir, 'subdir');
+    await mkdir(subdir);
+    const filePath = join(subdir, 'test.md');
+    await writeFile(filePath, '# Test');
+
+    const scan: ScanResult = {
+      inputPath: testDir,
+      isDirectory: true,
+      rootDir: testDir,
+      rootName: 'test-dir',
+      mdFiles: [filePath],
+      directories: [], // Not including subdir in directories
+      createRootPage: true,
+    };
+
+    const notion = createMockNotionClient();
+
+    await expect(
+      importMarkdown(scan, 'dest-page-id', {
+        notionClient: notion,
+      })
+    ).rejects.toThrow('Missing parent page for subdir/test.md');
+  });
+
+  test('throws error when parent page is missing for file in second pass', async () => {
+    const subdir = join(testDir, 'subdir');
+    await mkdir(subdir);
+    const filePath = join(subdir, 'test.md');
+    await writeFile(filePath, '# Test');
+
+    const scan: ScanResult = {
+      inputPath: testDir,
+      isDirectory: true,
+      rootDir: testDir,
+      rootName: 'test-dir',
+      mdFiles: [filePath],
+      directories: [], // Not including subdir in directories
+      createRootPage: true,
+    };
+
+    // Pre-create the file placeholder so it skips first pass
+    const state = await loadSyncState('dest-page-id');
+    state.files['subdir/test.md'] = {
+      notionPageId: 'placeholder-id',
+      contentHash: '',
+      lastSynced: new Date(0).toISOString(),
+    };
+    await saveSyncState(state);
+
+    const notion = createMockNotionClient();
+
+    await expect(
+      importMarkdown(scan, 'dest-page-id', {
+        notionClient: notion,
+        force: true, // Force update to trigger second pass
+      })
+    ).rejects.toThrow('Missing parent page for subdir/test.md');
+  });
+
+  test('creates new page when no existing page found', async () => {
+    const filePath = join(testDir, 'new.md');
+    await writeFile(filePath, '# New Content');
+
+    const scan: ScanResult = {
+      inputPath: filePath,
+      isDirectory: false,
+      rootDir: testDir,
+      rootName: 'new',
+      mdFiles: [filePath],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const notion = createMockNotionClient();
+    // Pre-create sync state but not for this file
+    const state = await loadSyncState('dest-page-id');
+    await saveSyncState(state);
+
+    await importMarkdown(scan, 'dest-page-id', {
+      notionClient: notion,
+      verbose: true,
+    });
+
+    const updatedState = await loadSyncState('dest-page-id');
+    expect(updatedState.files['new.md']?.notionPageId).toBe('new-page-id');
+    expect(notion.pages.create).toHaveBeenCalled();
+  });
+
+  test('wraps errors with file context', async () => {
+    const filePath = join(testDir, 'error.md');
+    await writeFile(filePath, '# Content');
+
+    const scan: ScanResult = {
+      inputPath: filePath,
+      isDirectory: false,
+      rootDir: testDir,
+      rootName: 'error',
+      mdFiles: [filePath],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const notion = createMockNotionClient();
+    // Mock blocks.children.append to throw an error
+    (
+      notion.blocks.children.append as ReturnType<typeof mock>
+    )?.mockRejectedValueOnce(new Error('Notion API error'));
+
+    await expect(
+      importMarkdown(scan, 'dest-page-id', {
+        notionClient: notion,
+      })
+    ).rejects.toThrow('Error processing error.md: Notion API error');
+  });
+
+  test('uploads local image file when present', async () => {
+    const imagePath = join(testDir, 'image.png');
+    // Create a valid PNG file (1x1 transparent pixel)
+    const pngData = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64'
+    );
+    await writeFile(imagePath, pngData);
+
+    const filePath = join(testDir, 'doc.md');
+    await writeFile(filePath, '# Doc\n\n![Image](image.png)');
+
+    const scan: ScanResult = {
+      inputPath: filePath,
+      isDirectory: false,
+      rootDir: testDir,
+      rootName: 'doc',
+      mdFiles: [filePath],
+      directories: [],
+      createRootPage: false,
+    };
+
+    const notion = createMockNotionClient();
+    await importMarkdown(scan, 'dest-page-id', {
+      notionClient: notion,
+      verbose: true,
+    });
+
+    const state = await loadSyncState('dest-page-id');
+    expect(state.files['doc.md']?.notionPageId).toBe('new-page-id');
+    // Verify the image upload was attempted
+    expect(notion.fileUploads.create).toHaveBeenCalled();
+  });
 });

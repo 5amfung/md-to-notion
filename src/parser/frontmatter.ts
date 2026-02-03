@@ -15,6 +15,11 @@ export function stripFrontmatter(content: string): {
     return { metadata: {}, body: content };
   }
 
-  const metadata = (yaml.load(yamlContent) as Record<string, unknown>) || {};
-  return { metadata, body: bodyContent };
+  try {
+    const metadata = (yaml.load(yamlContent) as Record<string, unknown>) || {};
+    return { metadata, body: bodyContent };
+  } catch {
+    // If YAML parsing fails, return empty metadata and body content
+    return { metadata: {}, body: bodyContent };
+  }
 }

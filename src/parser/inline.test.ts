@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import path from 'node:path';
-import { parseInline, replaceFootnoteRefs, resolveImagePath } from './inline';
+import {
+  parseInline,
+  replaceFootnoteRefs,
+  resolveImagePath,
+  toStyledInternalText,
+} from './inline';
 
 describe('parseInline', () => {
   test('bold with **', () => {
@@ -291,6 +296,19 @@ describe('parseInline', () => {
       { type: 'text', text: 'Formula: ' },
       { type: 'equation', text: '\\sum_{i=1}^{n} x_i' },
       { type: 'text', text: '.' },
+    ]);
+  });
+});
+
+describe('toStyledInternalText', () => {
+  test('converts text to styled internal link format', () => {
+    const result = toStyledInternalText('Unresolved Link');
+    expect(result).toEqual([
+      {
+        type: 'text',
+        text: 'Unresolved Link',
+        annotations: { bold: true, color: 'blue' },
+      },
     ]);
   });
 });

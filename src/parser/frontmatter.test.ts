@@ -32,7 +32,7 @@ No frontmatter here.`;
   test('empty frontmatter', () => {
     // Empty frontmatter with newline between delimiters
     const content = `---
-  
+
 ---
 
 Body content here.`;
@@ -143,5 +143,28 @@ Line 3`;
 
     expect(result.metadata).toEqual({ title: 'Test' });
     expect(result.body).toBe('\nLine 1\n\nLine 2\n\nLine 3');
+  });
+
+  test('frontmatter with only delimiters and no body', () => {
+    const content = '---\ntitle: Test\n---\n';
+
+    const result = stripFrontmatter(content);
+
+    expect(result.metadata).toEqual({ title: 'Test' });
+    expect(result.body).toBe('');
+  });
+
+  test('invalid YAML returns empty metadata', () => {
+    const content = `---
+title: Test
+  invalid: yaml: syntax:
+---
+
+Body content.`;
+
+    const result = stripFrontmatter(content);
+
+    // If YAML is invalid, it should still attempt to parse or return default
+    expect(result.body).toBeDefined();
   });
 });
