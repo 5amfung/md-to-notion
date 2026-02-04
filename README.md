@@ -11,7 +11,7 @@ Import markdown files to Notion, preserving directory structure, formatting, equ
 - **Obsidian syntax**: Wiki-links, highlights, callouts
 - **Image upload**: Local images are uploaded to Notion automatically
 
-## Sync State
+### Sync State
 
 A `.notion-sync.json` file is created in the current working directory to track:
 - Which files have been imported
