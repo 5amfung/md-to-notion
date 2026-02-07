@@ -1,6 +1,5 @@
 {
   "name": "@samfung/md-to-notion",
-  "version": "1.0.0",
   "description": "Import markdown files to Notion, with support for Obsidian syntax",
   "author": "Sam Fung",
   "repository": {
